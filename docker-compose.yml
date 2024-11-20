@@ -1,0 +1,67 @@
+version: '3.8'
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    ports:
+      - "9000:9000"
+    depends_on:
+      - keycloak
+      - loki
+      - prometheus
+      - tempo
+      - grafana
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/store
+
+  mongodb:
+    image: mongo:7.0.5
+    container_name: mongodb_store
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: product-service
+    volumes:
+      - ./data:/data/db
+
+  product-service:
+    build:
+      context: ./product-service
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://root:rootpassword@mongodb_store:27017/product-service?authSource=admin
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - mongodb
+
+  order-service:
+    build:
+      context: ./order-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - product-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+
+  notification-service:
+    build:
+      context: ./notification-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - api-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod

@@ -1,0 +1,25 @@
+version: '4'
+services:
+  mongodb:
+    image: mongo:7.0.5
+    container_name: mongodb_store
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: product-service
+    volumes:
+      - ./data:/data/db
+
+#  product-service:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile-product-service
+#    container_name: product-service
+#    ports:
+#      - "8080:8080"
+#    environment:
+#      SPRING_DATA_MONGODB_URI: mongodb://root:rootpassword@mongodb:27017/product-service?authSource=admin
+#    depends_on:
+#      - mongodb
