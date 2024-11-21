@@ -19,9 +19,12 @@ public class Product {
 
     @Id
     private String id;
-    private String name;
     @Indexed(unique = true)
     private String skuCode;
+    private String category;
+    private String brand;
+    private String name;
+    private String image;
     private String description;
     private BigDecimal price;
 }
