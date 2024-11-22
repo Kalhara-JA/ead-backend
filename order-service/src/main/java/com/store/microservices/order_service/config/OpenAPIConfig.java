@@ -9,18 +9,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenAPIConfig {
-
     @Bean
-    public OpenAPI orderServiceAPI() {
+    public OpenAPI productServiceAPI(){
         return new OpenAPI()
-                .info(new Info()
-                        .title("Order Service API")
-                        .description("Order Service API for managing orders")
-                        .version("v1.0.0")
+                .info(new Info().title("Order Service API")
+                        .description("This is Rest API for Order Service")
+                        .version(".v0.0.1")
                         .license(new License().name("Apache 2.0")))
-                .externalDocs(new ExternalDocumentation()
-                        .description("Order Service Wiki Documentation")
-                        .url("https://order-service-dummy-url.com/docs"));
+                .externalDocs(new ExternalDocumentation().description("You can refer to the order service Wiki Documentation")
+                        .url("http//:dadasdasdas.com"));
 
     }
 }
