@@ -10,9 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/product")
+@RequestMapping("api/v1/products")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
 public class ProductController {
 
     private final ProductService productService;
@@ -20,10 +19,7 @@ public class ProductController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ProductResponce createProduct (@RequestBody ProductRequest productRequest){
-
         return productService.createProduct(productRequest);
-
-
     }
 
     @GetMapping
@@ -50,6 +46,5 @@ public class ProductController {
     public String deleteProduct(@PathVariable String productId){
         return productService.deleteProduct(productId);
     }
-
 
 }
