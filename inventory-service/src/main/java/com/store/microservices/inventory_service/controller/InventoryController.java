@@ -15,11 +15,9 @@ import lombok.extern.slf4j.Slf4j;  // This provides the log variable
 
 import java.util.List;
 
-import static org.hibernate.query.sqm.tree.SqmNode.log;
-
 @Slf4j
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/api/v1/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
 
