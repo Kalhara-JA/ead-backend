@@ -31,7 +31,6 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
-
     @GetMapping("getOrderById/{id}")
     @ResponseStatus(HttpStatus.OK)
     public OrderResponse getOrderById(@PathVariable Long id) {
@@ -43,11 +42,20 @@ public class OrderController {
     public List<OrderResponse> getOrderByUser(@PathVariable String email) {
         return orderService.getOrderByUser(email);
     }
-
-    @PutMapping("/{id}/status")
+    @PutMapping("doPayment/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public String updateOrderStatus(@PathVariable Long id) {
+        return orderService.doPayment(id);
+    }
+    @PutMapping("cancelPayment/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public String cancelPayment(@PathVariable Long id) {
+        return orderService.cancelOrder(id);
+    }
+    @PutMapping("changeDeliveryStatus/{id}/status/{status}")
     @ResponseStatus(HttpStatus.OK)
     public String updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
-        return orderService.updateOrderStatus(id, status);
+        return orderService.updateOrderDeliveryStatus(id, status);
     }
 
 }

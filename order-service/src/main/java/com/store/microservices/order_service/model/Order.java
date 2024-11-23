@@ -25,7 +25,10 @@ public class Order {
     private String userEmail;
     private LocalDate orderDate;
     private String shippingAddress;
-    private String status;
+
+    private String paymentStatus;
+
+    private String deliveryStatus;
 
 
 }

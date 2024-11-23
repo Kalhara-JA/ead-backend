@@ -28,14 +28,16 @@ public class OrderService {
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
     public void placeOrder(OrderRequest orderRequest) {
        // var isProductInStock = inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity());
+       //Decrement Inventory
 
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString()); // Generate unique order number
         order.setOrderDate(orderRequest.date()); // Set order date to current date
         order.setUserEmail(orderRequest.userDetails().email()); // Set user's email
-        order.setStatus("PENDING");
+        order.setDeliveryStatus("PENDING");
         order.setShippingAddress(orderRequest.shippingAddress());// Default status
         order.setTotal(orderRequest.total()); // Calculate total order price
+        order.setPaymentStatus("CREATED");
 
         // Map OrderRequest items to OrderItem entities and associate them with the order
         List<OrderItem> orderItems = orderRequest.items().stream()
@@ -51,10 +53,10 @@ public class OrderService {
         orderRepository.save(order);
         orderItemRepository.saveAll(orderItems);
 
-        OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(),orderRequest.userDetails().firstName(),orderRequest.userDetails().lastName());
-        log.info("Staring to send OrderPlacedEvent {}",orderPlacedEvent);
-        kafkaTemplate.send("order-placed", orderPlacedEvent);
-        log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
+//        OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(),orderRequest.userDetails().firstName(),orderRequest.userDetails().lastName());
+//        log.info("Staring to send OrderPlacedEvent {}",orderPlacedEvent);
+//        kafkaTemplate.send("order-placed", orderPlacedEvent);
+//        log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
     }
 
     public List<OrderResponse> getAllOrders() {
@@ -77,7 +79,8 @@ public class OrderService {
                             order.getTotal(),
                             order.getOrderDate(),
                             order.getShippingAddress(),
-                            order.getStatus()
+                            order.getPaymentStatus(),
+                            order.getDeliveryStatus()
                     );
                 })
                 .toList();
@@ -101,7 +104,8 @@ public class OrderService {
                             order.getTotal(),
                             order.getOrderDate(),
                             order.getShippingAddress(),
-                            order.getStatus()
+                            order.getPaymentStatus(),
+                            order.getDeliveryStatus()
                     );
                 })
                 .orElseThrow(() -> new RuntimeException("Order not found"));
@@ -127,19 +131,65 @@ public class OrderService {
                             order.getTotal(),
                             order.getOrderDate(),
                             order.getShippingAddress(),
-                            order.getStatus()
+                            order.getPaymentStatus(),
+                            order.getDeliveryStatus()
                     );
                 })
                 .toList();
 
     }
 
-    public String updateOrderStatus(Long id, String status){
+    public String doPayment(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        if (order.getPaymentStatus().equals("CREATED")) {
+
         // Update the status
-        order.setStatus(status);
+        order.setPaymentStatus("PAID");
+
+        // Save the updated order back to the database
+        orderRepository.save(order);
+
+        // Return a success message
+        return "Payment successfully done";
+
+        //Notification to User about succefull payment
+    }
+
+        return "You can't do payment";
+    }
+
+    public String cancelOrder(Long id){
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if(!order.getDeliveryStatus().equals("PENDING")){
+            return "You can't cancel order";
+        }
+
+        //Increment Inventory
+
+        // Update the status
+        order.setPaymentStatus("CANCELED");
+        order.setDeliveryStatus("CANCELED");
+
+        // Save the updated order back to the database
+        orderRepository.save(order);
+
+        // Return a success message
+        return "Order Canceled successfully ";
+    }
+
+    public String updateOrderDeliveryStatus(Long id, String status){
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if(order.getPaymentStatus().equals("CREATED")||order.getPaymentStatus().equals("CANCELED")){
+            return "Can't change order status";
+        }
+        // Update the status
+        order.setDeliveryStatus(status);
 
         // Save the updated order back to the database
         orderRepository.save(order);
@@ -147,5 +197,7 @@ public class OrderService {
         // Return a success message
         return "Order status updated successfully to: " + status;
     }
+
+
 
 }
