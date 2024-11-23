@@ -1,8 +1,13 @@
 package com.store.microservices.product.service;
 
+
+import com.store.microservices.product.dto.CategoryRequest;
+import com.store.microservices.product.dto.CategoryResponse;
 import com.store.microservices.product.dto.ProductRequest;
-import com.store.microservices.product.dto.ProductResponse;
+import com.store.microservices.product.dto.ProductResponce;
+import com.store.microservices.product.model.Category;
 import com.store.microservices.product.model.Product;
+import com.store.microservices.product.repository.CategoryRepository;
 import com.store.microservices.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,22 +20,124 @@ import java.util.List;
 @Slf4j
 public class ProductService {
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
-    public ProductResponse createProduct(ProductRequest productRequest) {
+    public ProductResponce createProduct(ProductRequest productRequest){
         Product product = Product.builder()
                 .name(productRequest.name())
                 .skuCode(productRequest.skuCode())
+                .category(productRequest.category())
+                .brand(productRequest.brand())
                 .description(productRequest.description())
+                .image(productRequest.image())
                 .price(productRequest.price())
                 .build();
         productRepository.save(product);
-        log.info("Product created: {}", product);
-        return new ProductResponse(product.getId(), product.getName(), product.getSkuCode(), product.getDescription(), product.getPrice());
+        log.info("Product Created Successfully!");
+        return new ProductResponce(
+                product.getId(),
+                product.getName(),
+                product.getSkuCode(),
+                product.getCategory(),
+                product.getBrand(),
+                product.getDescription(),
+                product.getImage(),
+                product.getPrice());
     }
 
-    public List<ProductResponse> getAllProducts() {
-        return productRepository.findAll().stream()
-                .map(product -> new ProductResponse(product.getId(), product.getName(), product.getSkuCode(), product.getDescription(), product.getPrice()))
+    public CategoryResponse createCategory(CategoryRequest categoryRequest){
+        Category category = Category.builder()
+                .name(categoryRequest.name())
+                .skuCode(categoryRequest.skuCode())
+                .build();
+        categoryRepository.save(category);
+        log.info("Category Created Successfully!");
+        return new CategoryResponse(
+                category.getId(),
+                category.getName(),
+                category.getSkuCode()
+               );
+    }
+
+
+    public List<ProductResponce> getAllProducts(){
+        log.info("Fetching All Products");
+        return productRepository.findAll()
+                .stream()
+                .map(product -> new ProductResponce(
+                        product.getId(),
+                        product.getName(),
+                        product.getSkuCode(),
+                        product.getCategory(),
+                        product.getBrand(),
+                        product.getDescription(),
+                        product.getImage(),
+                        product.getPrice()))
                 .toList();
     }
+
+
+    public List<CategoryResponse> getAllCategories(){
+        log.info("Fetching All Categories");
+        return categoryRepository.findAll()
+                .stream()
+                .map(category -> new CategoryResponse(
+                        category.getId(),
+                        category.getName(),
+                        category.getSkuCode()
+                      ))
+                .toList();
+    }
+
+    public ProductResponce getProductById(String productId) {
+        log.info("Fetching Product By Id");
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product Not Found"));
+        return new ProductResponce(
+                product.getId(),
+                product.getName(),
+                product.getSkuCode(),
+                product.getCategory(),
+                product.getBrand(),
+                product.getDescription(),
+                product.getImage(),
+                product.getPrice());
+    }
+
+    public ProductResponce updateProduct(String productId, ProductRequest productRequest) {
+        log.info("Updating Product");
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product Not Found"));
+        product.setName(productRequest.name());
+        product.setSkuCode(productRequest.skuCode());
+        product.setCategory(productRequest.category());
+        product.setBrand(productRequest.brand());
+        product.setDescription(productRequest.description());
+        product.setImage(productRequest.image());
+        product.setPrice(productRequest.price());
+        productRepository.save(product);
+        return new ProductResponce(
+                product.getId(),
+                product.getName(),
+                product.getSkuCode(),
+                product.getCategory(),
+                product.getBrand(),
+                product.getDescription(),
+                product.getImage(),
+                product.getPrice());
+    }
+
+    public String deleteProduct(String productId) {
+        log.info("Deleting Product");
+        productRepository.deleteById(productId);
+        return "Product Deleted";
+    }
+
+
+
+
+
+
 }

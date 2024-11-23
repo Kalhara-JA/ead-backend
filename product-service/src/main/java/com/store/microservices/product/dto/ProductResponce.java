@@ -2,7 +2,7 @@ package com.store.microservices.product.dto;
 
 import java.math.BigDecimal;
 
-public record ProductRequest(
+public record ProductResponce(
         String id,
         String name,
         String skuCode,
@@ -11,5 +11,5 @@ public record ProductRequest(
         String description,
         String image,
         BigDecimal price) {
-
 }
+
