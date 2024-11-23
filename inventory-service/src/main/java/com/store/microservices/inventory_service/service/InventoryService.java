@@ -118,7 +118,7 @@ public class InventoryService {
     }
 
     @Transactional
-    public boolean IsInStock(OrderRequest[] orderRequests) {
+    public boolean orderIsInStock(OrderRequest[] orderRequests) {
         for (OrderRequest orderRequest : orderRequests) {
             Optional<Inventory> inventory = inventoryRepository.findBySkuCode(orderRequest.getSkuCode());
             if(inventory.isEmpty()){

@@ -13,7 +13,6 @@ public class SecurityRouteConfig {
             "/v3/api-docs/**",
             "/swagger-resources/**",
             "/aggregate/**",
-            "/api/inventory/**"
     };
 
     // Define secured routes with their required roles
