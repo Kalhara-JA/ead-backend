@@ -51,7 +51,7 @@ public class OrderService {
         orderRepository.save(order);
         orderItemRepository.saveAll(orderItems);
 
-        OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email());
+        OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(),orderRequest.userDetails().firstName(),orderRequest.userDetails().lastName());
         log.info("Staring to send OrderPlacedEvent {}",orderPlacedEvent);
         kafkaTemplate.send("order-placed", orderPlacedEvent);
         log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
