@@ -35,21 +35,21 @@ services:
     networks:
       - app_network
 
-  api-gateway:
-    container_name: api-gateway
-    build:
-      context: .
-      dockerfile: Dockerfile-api-gateway
-    ports:
-      - "9000:9000"
-    environment:
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/store
-      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
-      SPRINGDOC_API_DOCS_ENABLED: "true"
-    depends_on:
-      - keycloak
-    networks:
-      - app_network
+#  api-gateway:
+#    container_name: api-gateway
+#    build:
+#      context: .
+#      dockerfile: Dockerfile-api-gateway
+#    ports:
+#      - "9000:9000"
+#    environment:
+#      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/store
+#      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+#      SPRINGDOC_API_DOCS_ENABLED: "true"
+#    depends_on:
+#      - keycloak
+#    networks:
+#      - app_network
 
 networks:
   app_network:

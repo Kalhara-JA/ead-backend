@@ -12,16 +12,20 @@ public class SecurityRouteConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-resources/**",
-            "/aggregate/**"
+            "/aggregate/**",
+            "/api/inventory/**"
     };
 
     // Define secured routes with their required roles
     public static final Map<String, String[]> SECURED_GET_ROUTES = Map.of(
-            "/api/product/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
+            "/api/product/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()},
+            "/api/inventory/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
     );
 
     public static final Map<String, String[]> SECURED_POST_ROUTES = Map.of(
-            "/api/product/**", new String[]{UserRole.ADMIN.toString()}
+            "/api/product/**", new String[]{UserRole.ADMIN.toString()},
+            "/api/inventory/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
+
     );
 
     public static final Map<String, String[]> SECURED_PUT_ROUTES = Map.of(
