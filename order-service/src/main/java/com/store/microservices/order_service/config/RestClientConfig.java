@@ -17,16 +17,15 @@ import java.time.Duration;
 public class RestClientConfig {
 
     @Value("${inventory.url}")
-    private String inventoryServiceUrl;
+    private String inventoryServiceURL;
 
     @Bean
-    public InventoryClient inventoryClient() {
+    public InventoryClient InventoryClient(){
         RestClient restClient = RestClient.builder()
-                .baseUrl(inventoryServiceUrl)
-                .requestFactory(getClientHttpRequestFactory())
+                .baseUrl(inventoryServiceURL)
                 .build();
-        var restClientAdapter = RestClientAdapter.create(restClient);
-        var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+        var restClientAdapter=RestClientAdapter.create(restClient);
+        var httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(restClientAdapter).build();
         return httpServiceProxyFactory.createClient(InventoryClient.class);
     }
 
@@ -37,3 +36,4 @@ public class RestClientConfig {
         return ClientHttpRequestFactories.get(clientHttpRequestFactorySettings);
     }
 }
+
