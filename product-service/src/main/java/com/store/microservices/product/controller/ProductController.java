@@ -1,5 +1,7 @@
 package com.store.microservices.product.controller;
 
+import com.store.microservices.product.dto.CategoryRequest;
+import com.store.microservices.product.dto.CategoryResponse;
 import com.store.microservices.product.dto.ProductRequest;
 import com.store.microservices.product.dto.ProductResponce;
 import com.store.microservices.product.service.ProductService;
@@ -21,6 +23,11 @@ public class ProductController {
     public ProductResponce createProduct (@RequestBody ProductRequest productRequest){
         return productService.createProduct(productRequest);
     }
+    @PostMapping("/createCategory")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CategoryResponse createCategory (@RequestBody CategoryRequest categoryRequest){
+        return productService.createCategory(categoryRequest);
+    }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -28,10 +35,18 @@ public class ProductController {
         return productService.getAllProducts();
     }
 
+
+
     @GetMapping("/{productId}")
     @ResponseStatus(HttpStatus.OK)
     public ProductResponce getProductById(@PathVariable String productId){
         return productService.getProductById(productId);
+    }
+
+    @GetMapping("/getAllCategories")
+    @ResponseStatus(HttpStatus.OK)
+    public List<CategoryResponse> getAllCategories(){
+        return productService.getAllCategories();
     }
 
     @PutMapping("/{productId}")
@@ -46,5 +61,7 @@ public class ProductController {
     public String deleteProduct(@PathVariable String productId){
         return productService.deleteProduct(productId);
     }
+
+
 
 }

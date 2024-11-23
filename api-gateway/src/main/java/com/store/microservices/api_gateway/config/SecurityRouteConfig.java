@@ -15,7 +15,7 @@ public class SecurityRouteConfig {
             "/v3/api-docs/**",
             "/swagger-resources/**",
             "/aggregate/**",
-            "/api/v1/products"
+            "/api/v1/products",
 
     };
 
