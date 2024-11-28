@@ -1,14 +1,17 @@
 package com.store.microservices.product.service;
 
 
+import com.store.microservices.product.client.InventoryClient;
 import com.store.microservices.product.dto.ProductRequest;
 import com.store.microservices.product.dto.ProductResponce;
 import com.store.microservices.product.model.Product;
 import com.store.microservices.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.origin.Origin;
 import org.springframework.stereotype.Service;
 
+import javax.lang.model.util.Elements;
 import java.util.List;
 
 @Service
@@ -16,8 +19,19 @@ import java.util.List;
 @Slf4j
 public class ProductService {
     private final ProductRepository productRepository;
-
+    private final InventoryClient inventoryClient;
     public ProductResponce createProduct(ProductRequest productRequest){
+
+        Origin productBySkuCode = productRepository.findBySkuCode(productRequest.skuCode());
+        if(productBySkuCode != null){
+            log.error("Product Already Exists!");
+            throw new RuntimeException("Product Already Exists!");
+        }
+
+        if(!inventoryClient.addProductToInventory(productRequest.skuCode())){
+            throw new RuntimeException("Product adding failed!");
+        };
+
         Product product = Product.builder()
                 .name(productRequest.name())
                 .skuCode(productRequest.skuCode())
@@ -38,7 +52,6 @@ public class ProductService {
                 product.getDescription(),
                 product.getImage(),
                 product.getPrice());
-
 
     }
     public List<ProductResponce> getAllProducts(){
