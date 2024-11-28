@@ -1,4 +1,4 @@
-package com.store.microservices.inventory_service.model;
+package com.store.microservices.order_service.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,17 +7,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name="t_inventory")
+@Table(name = "t_order_items")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-public class Inventory {
+@AllArgsConstructor
+
+public class OrderItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String skuCode;
     private Integer quantity;
-    private String location;
-    private String status;
+
+    @ManyToOne
+    @JoinColumn(name = "order_id", nullable = false) // Foreign key to Order table
+    private Order order;
+
+   // private Long orderId;
 }

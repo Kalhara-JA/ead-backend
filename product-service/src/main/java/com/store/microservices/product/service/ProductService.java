@@ -3,9 +3,13 @@ package com.store.microservices.product.service;
 
 import com.store.microservices.product.client.InventoryClient;
 import com.store.microservices.product.dto.InventoryResponse;
+import com.store.microservices.product.dto.CategoryRequest;
+import com.store.microservices.product.dto.CategoryResponse;
 import com.store.microservices.product.dto.ProductRequest;
 import com.store.microservices.product.dto.ProductResponce;
+import com.store.microservices.product.model.Category;
 import com.store.microservices.product.model.Product;
+import com.store.microservices.product.repository.CategoryRepository;
 import com.store.microservices.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +25,8 @@ import java.util.List;
 public class ProductService {
     private final ProductRepository productRepository;
     private final InventoryClient inventoryClient;
+    private final CategoryRepository categoryRepository;
+
     public ProductResponce createProduct(ProductRequest productRequest){
 
         Origin productBySkuCode = productRepository.findBySkuCode(productRequest.skuCode());
@@ -53,8 +59,24 @@ public class ProductService {
                 product.getDescription(),
                 product.getImage(),
                 product.getPrice());
+    }
+
+    public CategoryResponse createCategory(CategoryRequest categoryRequest){
+        Category category = Category.builder()
+                .name(categoryRequest.name())
+                .skuCode(categoryRequest.skuCode())
+                .build();
+        categoryRepository.save(category);
+        log.info("Category Created Successfully!");
+        return new CategoryResponse(
+                category.getId(),
+                category.getName(),
+                category.getSkuCode()
+               );
 
     }
+
+
     public List<ProductResponce> getAllProducts(){
         log.info("Fetching All Products");
         return productRepository.findAll()
@@ -68,6 +90,19 @@ public class ProductService {
                         product.getDescription(),
                         product.getImage(),
                         product.getPrice()))
+                .toList();
+    }
+
+
+    public List<CategoryResponse> getAllCategories(){
+        log.info("Fetching All Categories");
+        return categoryRepository.findAll()
+                .stream()
+                .map(category -> new CategoryResponse(
+                        category.getId(),
+                        category.getName(),
+                        category.getSkuCode()
+                      ))
                 .toList();
     }
 
