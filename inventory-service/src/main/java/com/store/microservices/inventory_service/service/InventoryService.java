@@ -24,6 +24,21 @@ public class InventoryService {
         return inventoryRepository.existsBySkuCodeAndQuantityIsGreaterThanEqual(skuCode, quantity);
     }
 
+    public InventoryResponse addProduct(String skuCode){
+        Inventory item = new Inventory();
+        item.setSkuCode(skuCode);
+        item.setQuantity(0);
+        item.setLocation("Unknown");
+        item.setStatus("OUT_OF_STOCK");
+        Inventory savedItem = inventoryRepository.save(item);
+        return InventoryResponse.builder()
+                .skuCode(savedItem.getSkuCode())
+                .isInStock(savedItem.getQuantity() > 0)
+                .availableQuantity(savedItem.getQuantity())
+                .status(savedItem.getStatus())
+                .build();
+    }
+
     @Transactional(readOnly = true)
     public List<Inventory> getAllInventory(){
         return inventoryRepository.findAll();
@@ -137,5 +152,22 @@ public class InventoryService {
             inventoryRepository.save(item);
         }
         return true;
+    }
+
+    public InventoryResponse addQuantity(String skuCode, Integer quantity) {
+        Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
+        if(inventory.isEmpty()){
+            throw new RuntimeException("Product with SKU "+ skuCode +" not found");
+        }
+        Inventory item = inventory.get();
+        item.setQuantity(item.getQuantity() + quantity);
+        item.setStatus(determineStatus(item.getQuantity()));
+        Inventory updatedItem = inventoryRepository.save(item);
+        return InventoryResponse.builder()
+                .skuCode(updatedItem.getSkuCode())
+                .isInStock(updatedItem.getQuantity() > 0)
+                .availableQuantity(updatedItem.getQuantity())
+                .status(updatedItem.getStatus())
+                .build();
     }
 }
