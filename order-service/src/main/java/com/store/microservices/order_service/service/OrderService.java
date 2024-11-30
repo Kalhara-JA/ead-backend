@@ -3,6 +3,7 @@ package com.store.microservices.order_service.service;
 
 import com.store.microservices.order_service.client.InventoryClient;
 import com.store.microservices.order_service.dto.*;
+import com.store.microservices.order_service.event.OrderCancelEvent;
 import com.store.microservices.order_service.event.OrderPlacedEvent;
 import com.store.microservices.order_service.model.Order;
 import com.store.microservices.order_service.model.OrderItem;
@@ -10,6 +11,7 @@ import com.store.microservices.order_service.repository.OrderItemRepository;
 import com.store.microservices.order_service.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.bcel.ExceptionRange;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,8 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final InventoryClient inventoryClient;
-    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplatePlace;
+    private final KafkaTemplate<String, OrderCancelEvent> kafkaTemplateCancel;
 
     @Transactional
     public void placeOrder(OrderRequest orderRequest) {
@@ -67,10 +70,14 @@ public class OrderService {
             orderItemRepository.saveAll(orderItems);
 
             //Send OrderPlacedEvent
-//            OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(),orderRequest.userDetails().firstName(),orderRequest.userDetails().lastName());
-//            log.info("Staring to send OrderPlacedEvent {}",orderPlacedEvent);
-//            kafkaTemplate.send("order-placed", orderPlacedEvent);
-//            log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
+            try {
+                OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(), orderRequest.userDetails().firstName(), orderRequest.userDetails().lastName());
+                log.info("Staring to send OrderPlacedEvent {}", orderPlacedEvent);
+                kafkaTemplatePlace.send("order-placed", orderPlacedEvent);
+                log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
+            }catch (Exception ex){
+
+            }
         }
         else {
             //Throw an exception if any item is out of stock
@@ -212,6 +219,16 @@ public class OrderService {
 
                 // Save the updated order back to the database
                 orderRepository.save(order);
+
+                //Order Cancel Event
+                try {
+                    OrderCancelEvent orderCancelEvent = new OrderCancelEvent(order.getOrderNumber(), order.getUserEmail());
+                    log.info("Staring to send OrderPlacedEvent {}", orderCancelEvent);
+                    kafkaTemplateCancel.send("order-cancel", orderCancelEvent);
+                    log.info("Ending to send OrderPlacedEvent {}", orderCancelEvent);
+                }catch (Exception ex){
+
+                }
 
                 // Return a success message
                 return "Order Canceled successfully ";
