@@ -68,6 +68,12 @@ public class InventoryService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public Integer getProductQuantity(String skuCode){
+        Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
+        return inventory.map(Inventory::getQuantity).orElse(0);
+    }
+
     @Transactional
     public InventoryResponse addInventory(InventoryRequest request){
         Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(request.getSkuCode());

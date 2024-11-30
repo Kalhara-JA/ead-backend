@@ -56,6 +56,14 @@ public class ProductController {
         return productService.updateProduct(productId, productRequest);
     }
 
+    @PutMapping("/updateImage/{productId}")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponce updateProductImage(@PathVariable String productId, @RequestBody String image){
+        System.out.println("Product ID: " + productId);
+        System.out.println("Image: " + image);
+        return productService.updateProductImage(productId, image);
+    }
+
     @DeleteMapping("/{productId}")
     @ResponseStatus(HttpStatus.OK)
     public String deleteProduct(@PathVariable String productId){
