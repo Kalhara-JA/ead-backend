@@ -52,7 +52,7 @@ public class OrderController {
         return orderService.getOrderByUser(email);
     }
 
-    @PatchMapping("{id}/payment")
+    @PutMapping("{id}/payment")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> updateOrderStatus(@PathVariable Long id) {
         try {
@@ -64,7 +64,7 @@ public class OrderController {
         }
     }
 
-    @PatchMapping("{id}/cancel")
+    @PutMapping("{id}/cancel")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> cancelOrder(@PathVariable Long id) {
         try {
@@ -76,7 +76,7 @@ public class OrderController {
         }
     }
 
-    @PatchMapping("{id}/ship")
+    @PutMapping("{id}/ship")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> shipOrder(@PathVariable Long id) {
         try {
@@ -90,7 +90,7 @@ public class OrderController {
     }
 
 
-    @PatchMapping("{id}/deliver")
+    @PutMapping("{id}/deliver")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<String> deliverOrder(@PathVariable Long id) {
         try {
