@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public record OrderResponse(Long id, String orderNumber, List<OrderItem> items, BigDecimal total, LocalDate date,String shippingAddress, String paymentStatus,String deliveryStatus) {
+public record OrderResponse(Long id, String orderNumber, List<OrderItem> items, BigDecimal total, LocalDate date,String shippingAddress, String paymentStatus,String deliveryStatus,String email) {
     public record OrderItem(String skuCode, Integer quantity) {
     }
 
