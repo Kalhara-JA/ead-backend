@@ -1,6 +1,7 @@
 package com.store.microservices.order_service.controller;
 
 
+import com.store.microservices.order_service.dto.OrderPlaceResponse;
 import com.store.microservices.order_service.dto.OrderRequest;
 import com.store.microservices.order_service.dto.OrderResponse;
 import com.store.microservices.order_service.dto.UserException;
@@ -10,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -20,18 +22,24 @@ public class OrderController {
     private final OrderService orderService;
 
 
+
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<String> placeOrder(@RequestBody OrderRequest orderRequest) {
-        try{
-        orderService.placeOrder(orderRequest);
-            return ResponseEntity.status(HttpStatus.CREATED).body("Order placed successfully");
-        }catch(UserException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        }catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Order place failed");
+    public ResponseEntity<OrderPlaceResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
+        OrderPlaceResponse orderPlaceResponse;
+        try {
+            orderPlaceResponse = orderService.placeOrder(orderRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(orderPlaceResponse);
+        } catch (UserException ex) {
+            // Handle UserException, possibly with specific error details
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
+        } catch (Exception ex) {
+            // Handle general exceptions
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, "Order Place failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
         }
-
     }
 
     @GetMapping
