@@ -159,6 +159,7 @@ public class ProductService {
         product.setDescription(productRequest.description());
         product.setImage(productRequest.image());
         product.setPrice(productRequest.price());
+        product.setUpdatedAt(productRequest.updatedAt());
         productRepository.save(product);
         return new ProductResponce(
                 product.getId(),
