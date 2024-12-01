@@ -28,8 +28,10 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     public ProductResponce createProduct(ProductRequest productRequest){
+        log.info("Creating Product:{}",productRequest.skuCode());
 
         Origin productBySkuCode = productRepository.findBySkuCode(productRequest.skuCode());
+        log.info("Product By SKU Code: {}", productBySkuCode);
         if(productBySkuCode != null){
             log.error("Product Already Exists!");
             throw new RuntimeException("Product Already Exists!");
@@ -47,6 +49,7 @@ public class ProductService {
                 .description(productRequest.description())
                 .image(productRequest.image())
                 .price(productRequest.price())
+                .updatedAt(productRequest.updatedAt())
                 .build();
         productRepository.save(product);
         log.info("Product Created Successfully!");
@@ -58,7 +61,8 @@ public class ProductService {
                 product.getBrand(),
                 product.getDescription(),
                 product.getImage(),
-                product.getPrice());
+                product.getPrice(),
+                product.getUpdatedAt());
     }
 
     public CategoryResponse createCategory(CategoryRequest categoryRequest){
@@ -89,7 +93,8 @@ public class ProductService {
                         product.getBrand(),
                         product.getDescription(),
                         product.getImage(),
-                        product.getPrice()))
+                        product.getPrice(),
+                        product.getUpdatedAt()))
                 .toList();
     }
 
@@ -119,7 +124,8 @@ public class ProductService {
                 product.getBrand(),
                 product.getDescription(),
                 product.getImage(),
-                product.getPrice());
+                product.getPrice(),
+                product.getUpdatedAt());
     }
 
     public InventoryResponse getProductQuantity(String skuCode) {
@@ -162,7 +168,27 @@ public class ProductService {
                 product.getBrand(),
                 product.getDescription(),
                 product.getImage(),
-                product.getPrice());
+                product.getPrice(),
+                product.getUpdatedAt());
+    }
+
+    public ProductResponce updateProductImage(String productId, String image) {
+        log.info("Updating Product Image : {}",image);
+        Product product = productRepository
+                .findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product Not Found"));
+        product.setImage(image);
+        productRepository.save(product);
+        return new ProductResponce(
+                product.getId(),
+                product.getName(),
+                product.getSkuCode(),
+                product.getCategory(),
+                product.getBrand(),
+                product.getDescription(),
+                product.getImage(),
+                product.getPrice(),
+                product.getUpdatedAt());
     }
 
     public String deleteProduct(String productId) {

@@ -23,11 +23,12 @@ public class InventoryController {
 
     @PostMapping("/products")
     @ResponseStatus(HttpStatus.OK)
-    public InventoryResponse addProduct(@RequestParam String skuCode) {
+    public Boolean addProduct(@RequestBody String skuCode) {
         log.info("Received request to add product with SKU code: {}", skuCode);
         InventoryResponse response = inventoryService.addProduct(skuCode);
         log.info("Product with SKU code: {} added successfully, Response: {}", skuCode, response);
-        return response;
+        return response != null;
+
     }
 
     @GetMapping
@@ -48,7 +49,17 @@ public class InventoryController {
         return response;
     }
 
-    @GetMapping("/all")
+    @GetMapping("/getProductQuantity/{skuCode}")
+    @ResponseStatus(HttpStatus.OK)
+    public Integer getProductQuantity(@PathVariable String skuCode) {
+        log.info("Fetching quantity for SKU code: {}", skuCode);
+        Integer quantity = inventoryService.getProductQuantity(skuCode);
+        log.info("Fetched quantity: {} for SKU code: {}", quantity, skuCode);
+        return quantity;
+    }
+
+
+        @GetMapping("/all")
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> getAllInventory() {
         log.info("Fetching all inventory items");
