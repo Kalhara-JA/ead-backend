@@ -28,17 +28,16 @@ public class ProductService {
     private final CategoryRepository categoryRepository;
 
     public ProductResponce createProduct(ProductRequest productRequest){
-        log.info("Creating Producttttttttttttttttttttttttttttttttt:{}",productRequest.skuCode());
+        log.info("Creating Product:{}",productRequest.skuCode());
 
         Origin productBySkuCode = productRepository.findBySkuCode(productRequest.skuCode());
-        log.info("Product By SKU Codeeeeeeeeeeeeeeeeeeee: {}", productBySkuCode);
+        log.info("Product By SKU Code: {}", productBySkuCode);
         if(productBySkuCode != null){
             log.error("Product Already Exists!");
             throw new RuntimeException("Product Already Exists!");
         }
 
         if(!inventoryClient.addProductToInventory(productRequest.skuCode())){
-            log.info("hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             throw new RuntimeException("Product adding failed!");
         };
 
