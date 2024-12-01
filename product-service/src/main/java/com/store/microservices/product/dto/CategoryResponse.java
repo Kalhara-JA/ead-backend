@@ -4,8 +4,9 @@ import java.math.BigDecimal;
 
 public record CategoryResponse(
         String id,
-        String skuCode,
-        String name
+        String name,
+        String skuCode
+
 
       ) {
 }
