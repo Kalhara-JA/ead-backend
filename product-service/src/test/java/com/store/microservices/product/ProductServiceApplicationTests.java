@@ -1,17 +1,20 @@
 package com.store.microservices.product;
 
+import com.store.microservices.product.stubs.InventoryClientStub;
 import io.restassured.RestAssured;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWireMock(port = 0)
 class ProductServiceApplicationTests {
 
     @Container
@@ -43,7 +46,7 @@ class ProductServiceApplicationTests {
                     "updatedAt": "2021-09-01"
                 }
                 """;
-
+        InventoryClientStub.stubInventoryCall("product_1");
         var response = RestAssured.given()
                 .contentType("application/json")
                 .body(requestBody)
