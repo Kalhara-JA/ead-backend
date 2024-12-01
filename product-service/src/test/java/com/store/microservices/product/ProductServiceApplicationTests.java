@@ -37,6 +37,10 @@ class ProductServiceApplicationTests {
                     "skuCode": "product_1",
                     "description": "Description 1",
                     "price": 100
+                    "category": "Category 1",
+                    "brand": "Brand 1",
+                    "image": "Image 1"
+                    "updatedAt": "2021-09-01"
                 }
                 """;
 
@@ -44,7 +48,7 @@ class ProductServiceApplicationTests {
                 .contentType("application/json")
                 .body(requestBody)
                 .when()
-                .post("/api/product");
+                .post("/api/products");
 
         System.out.println("Response: " + response.asString());
 
@@ -54,7 +58,11 @@ class ProductServiceApplicationTests {
                 .body("name", Matchers.equalTo("Product 1"))
                 .body("skuCode", Matchers.equalTo("product_1"))
                 .body("description", Matchers.equalTo("Description 1"))
-                .body("price", Matchers.equalTo(100));
+                .body("price", Matchers.equalTo(100))
+                .body("category", Matchers.equalTo("Category 1"))
+                .body("brand", Matchers.equalTo("Brand 1"))
+                .body("image", Matchers.equalTo("Image 1"))
+                .body("updatedAt", Matchers.equalTo("2021-09-01"));
     }
 
 }
