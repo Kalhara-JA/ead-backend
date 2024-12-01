@@ -3,6 +3,10 @@ package com.store.microservices.order_service;
 
 import com.store.microservices.order_service.stubs.InventoryClientStub;
 import io.restassured.RestAssured;
+import io.restassured.path.json.JsonPath;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +17,11 @@ import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.MySQLContainer;
 
+import java.math.BigDecimal;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.testcontainers.shaded.org.hamcrest.Matchers.is;
+import static org.testcontainers.shaded.org.hamcrest.Matchers.notNullValue;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -73,7 +81,7 @@ class OrderServiceApplicationTests {
 
 		InventoryClientStub.stubInventoryCall(items);
 
-		var responseBodyString =RestAssured.given()
+		var responseBody =RestAssured.given()
 				.contentType("application/json")
 				.body(requestBody)
 				.when()
@@ -84,7 +92,13 @@ class OrderServiceApplicationTests {
 				.extract()
 				.body().asString();
 
-		assertThat(responseBodyString,Matchers.is("Order placed successfully"));
+		JsonPath jsonPath = new JsonPath(responseBody);
+		Long orderId = jsonPath.getLong("orderId"); // Extract the order ID
+		String orderNumber = jsonPath.getString("orderNumber");
+
+
+		assertThat(orderId, Matchers.notNullValue()); // Ensure orderId is not null
+
 	}
 
 
