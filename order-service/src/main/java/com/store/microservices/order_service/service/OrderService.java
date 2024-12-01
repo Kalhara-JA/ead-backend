@@ -32,7 +32,7 @@ public class OrderService {
     private final KafkaTemplate<String, OrderCancelEvent> kafkaTemplateCancel;
 
     @Transactional
-    public void placeOrder(OrderRequest orderRequest) {
+    public OrderPlaceResponse placeOrder(OrderRequest orderRequest) {
         try {
             //Map OrderRequest items to InventoryRequest DTOs
         List<InventoryRequest> inventoryItems = orderRequest.items().stream()
@@ -68,6 +68,7 @@ public class OrderService {
             // Save Order and OrderItems
             orderRepository.save(order);
             orderItemRepository.saveAll(orderItems);
+            OrderPlaceResponse orderPlaceResponse = new OrderPlaceResponse(order.getId(),order.getOrderNumber(),order.getTotal(),"");
 
             //Send OrderPlacedEvent
             try {
@@ -78,6 +79,7 @@ public class OrderService {
             }catch (Exception ex){
 
             }
+            return orderPlaceResponse;
         }
         else {
             //Throw an exception if any item is out of stock
