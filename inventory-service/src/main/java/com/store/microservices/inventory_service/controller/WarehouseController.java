@@ -4,19 +4,17 @@ import com.store.microservices.inventory_service.dto.WarehouseRequest;
 import com.store.microservices.inventory_service.dto.WarehouseResponse;
 import com.store.microservices.inventory_service.model.Warehouse;
 import com.store.microservices.inventory_service.service.WarehouseService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/inventory/warehouses")
+@RequestMapping("/api/v1/inventory/warehouse")
+@RequiredArgsConstructor
 public class WarehouseController {
     private final WarehouseService warehouseService;
-
-    public WarehouseController(WarehouseService warehouseService) {
-        this.warehouseService = warehouseService;
-    }
 
     @GetMapping
     public List<Warehouse> getAllWarehouses() {

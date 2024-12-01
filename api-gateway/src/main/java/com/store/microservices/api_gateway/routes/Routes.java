@@ -76,4 +76,14 @@ public class Routes {
                 .build();
     }
 
+
+    @Bean
+    public RouterFunction<ServerResponse> warehouseServiceRoute() {
+        return route("warehouse_service")
+                .route(RequestPredicates.path("/api/v1/inventory/warehouse/**"), HandlerFunctions.http("http://localhost:8082"))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("warehouseServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+
 }

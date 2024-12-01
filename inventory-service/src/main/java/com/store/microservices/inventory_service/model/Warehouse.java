@@ -1,5 +1,6 @@
 package com.store.microservices.inventory_service.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,5 +24,6 @@ public class Warehouse {
     private String managerName;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "warehouse")
+    @JsonManagedReference
     private List<Inventory> inventoryList;
 }

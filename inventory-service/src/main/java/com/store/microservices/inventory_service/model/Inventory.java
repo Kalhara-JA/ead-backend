@@ -1,5 +1,6 @@
 package com.store.microservices.inventory_service.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class Inventory {
 
     @ManyToOne
     @JoinColumn(name = "warehouse_id")
+    @JsonBackReference
     private Warehouse warehouse;
 
 
