@@ -40,7 +40,7 @@ public class InventoryController {
         return inventoryList;
     }
 
-    @GetMapping("/check-stock")
+    @GetMapping("/checkStock")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse isInStock(@RequestParam String skuCode, @RequestParam Integer quantity) {
         log.info("Checking stock for SKU code: {}, Quantity: {}", skuCode, quantity);
@@ -70,18 +70,26 @@ public class InventoryController {
 
     @PostMapping("/deduct")
     @ResponseStatus(HttpStatus.OK)
-    public InventoryResponse deductInventory(@RequestParam String skuCode, @RequestParam Integer quantity) {
-        log.info("Received request to deduct inventory for SKU code: {}, Quantity: {}", skuCode, quantity);
-        InventoryResponse response = inventoryService.reduceStock(skuCode, quantity);
-        log.info("Inventory deduction for SKU code: {} completed, Response: {}", skuCode, response);
-        return response;
+    public InventoryResponse deductStock(
+            @RequestParam String skuCode,
+            @RequestParam Integer quantity
+    ) {
+        log.info("Received request to deduct stock for SKU code: {}, Quantity: {}", skuCode, quantity);
+        try {
+            InventoryResponse response = inventoryService.reduceStock(skuCode, quantity);
+            log.info("Stock deduction for SKU code: {} completed, Response: {}", skuCode, response);
+            return response;
+        } catch (Exception ex) {
+            log.error("Error during stock deduction for SKU code: {}", skuCode, ex);
+            throw ex; // or handle as appropriate
+        }
     }
 
     @PostMapping("/check-stock")
     public ResponseEntity<StockCheckResponse> checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
         log.info("Received stock check request for orders: {}", orderRequests);
         try {
-            boolean isInStock = inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
+            Boolean isInStock = inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
             StockCheckResponse response = new StockCheckResponse(isInStock);
 
             if (isInStock) {
@@ -115,5 +123,26 @@ public class InventoryController {
         log.info("Inventory restock for SKU code: {} completed, Response: {}", skuCode, response);
         return response;
     }
-    
+
+    @PostMapping("/increment-stock")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<StockCheckResponse> restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
+        log.info("Received stock check request for orders: {}", orderRequests);
+        try {
+            Boolean isInStock = inventoryService.restockInventory(orderRequests.toArray(new OrderRequest[0]));
+            StockCheckResponse response = new StockCheckResponse(isInStock);
+
+            if (isInStock) {
+                log.info("Order is in stock and processed successfully");
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("Order cannot be fulfilled due to insufficient stock");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+        } catch (Exception e) {
+            log.error("Error processing stock check request", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new StockCheckResponse(false));
+        }
+    }
 }

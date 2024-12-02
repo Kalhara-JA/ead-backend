@@ -12,5 +12,4 @@ import lombok.NoArgsConstructor;
 public class OrderRequest {
     private String skuCode;
     private Integer quantity;
-    private String location;
 }
