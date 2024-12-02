@@ -56,13 +56,15 @@ class InventoryServiceApplicationTests {
         String skuCode = "iphone_17";
 
         RestAssured.given()
-                .queryParam("skuCode", skuCode)
+                .contentType("application/json")
+                .body(skuCode)
                 .when()
                 .post(INVENTORY_ENDPOINT + "/products")
                 .then()
                 .statusCode(200)
-                .body("skuCode", Matchers.equalTo(skuCode));
+                .body(Matchers.equalTo("true")); // Ensure the response matches the Boolean return type
     }
+
 
     @Test
     void shouldFetchAllInventory() {
