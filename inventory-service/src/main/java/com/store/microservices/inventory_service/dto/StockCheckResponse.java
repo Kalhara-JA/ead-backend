@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class StockCheckResponse {
-    private boolean isInStock;
+    private Boolean isInStock;
 }
