@@ -11,4 +11,5 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     Optional<Inventory> findBySkuCode(String skuCode);
     List<Inventory> findByQuantityLessThanEqual(Integer threshold);
 
+    List<Inventory> findBySkuCodeOrderByQuantityDesc(String skuCode);
 }

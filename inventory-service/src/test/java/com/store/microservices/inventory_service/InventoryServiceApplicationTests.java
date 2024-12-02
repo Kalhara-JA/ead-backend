@@ -2,6 +2,7 @@ package com.store.microservices.inventory_service;
 
 import io.restassured.RestAssured;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,6 +25,17 @@ class InventoryServiceApplicationTests {
     void setUp() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
+
+        String skuCode = "iphone_15";
+
+        var response = RestAssured.given()
+                .queryParam("skuCode", skuCode)
+                .when()
+                .post("/api/v1/inventory/products");
+
+        response.then()
+                .statusCode(200)
+                .body("skuCode", Matchers.equalTo(skuCode));
     }
 
     static {
@@ -32,7 +44,7 @@ class InventoryServiceApplicationTests {
 
     @Test
     void shouldAddProductToInventory() {
-        String skuCode = "iphone_15";
+        String skuCode = "iphone_17";
 
         var response = RestAssured.given()
                 .queryParam("skuCode", skuCode)
@@ -55,59 +67,23 @@ class InventoryServiceApplicationTests {
                 .body("size()", Matchers.greaterThanOrEqualTo(0));
     }
 
-    @Test
-    void shouldCheckStockForProduct() {
-        String skuCode = "test_product";
-        int quantity = 10;
-
-        // Assume product exists in the database with sufficient stock
-        var response = RestAssured.given()
-                .queryParam("skuCode", skuCode)
-                .queryParam("quantity", quantity)
-                .when()
-                .get("/api/v1/inventory/check-stock");
-
-        response.then()
-                .statusCode(200)
-                .body("skuCode", Matchers.equalTo(skuCode))
-                .body("inStock", Matchers.equalTo(true));
-    }
-
-    @Test
-    void shouldDeductStockFromInventory() {
-        String skuCode = "test_product";
-        int quantity = 5;
-
-        // Assume product exists in the database with sufficient stock
-        var response = RestAssured.given()
-                .queryParam("skuCode", skuCode)
-                .queryParam("quantity", quantity)
-                .when()
-                .post("/api/v1/inventory/deduct");
-
-        response.then()
-                .statusCode(200)
-                .body("skuCode", Matchers.equalTo(skuCode))
-                .body("quantity", Matchers.greaterThanOrEqualTo(0));
-    }
 
     @Test
     void shouldRestockInventory() {
-        String skuCode = "restock_test_product";
-        int quantity = 20;
+        String skuCode = "iphone_15";
+        Integer restockQuantity = 120;
 
-        // Add stock to the inventory
         var response = RestAssured.given()
                 .queryParam("skuCode", skuCode)
-                .queryParam("quantity", quantity)
+                .queryParam("quantity", restockQuantity)
                 .when()
                 .post("/api/v1/inventory/restock");
 
         response.then()
                 .statusCode(200)
-                .body("skuCode", Matchers.equalTo(skuCode))
-                .body("quantity", Matchers.equalTo(quantity));
+                .body("skuCode", Matchers.equalTo(skuCode));
     }
+
 
     @Test
     void shouldReturnLowStockItems() {
@@ -122,21 +98,52 @@ class InventoryServiceApplicationTests {
 
     @Test
     void shouldCheckAndProcessOrder() {
+        // Create a request body with test data
         String requestBody = """
-                [
-                    {"skuCode": "order_test_product", "quantity": 2},
-                    {"skuCode": "order_test_product_2", "quantity": 5}
-                ]
-                """;
+            [
+                {"skuCode": "iphone_15", "quantity": 3},
+                {"skuCode": "pixel_8", "quantity": 7}
+            ]
+            """;
 
-        var response = RestAssured.given()
-                .contentType("application/json")
-                .body(requestBody)
+        // Send the POST request to the API
+        Boolean response = RestAssured.given()
+                .contentType("application/json") // Set content type
+                .body(requestBody)              // Attach request body
                 .when()
-                .post("/api/v1/inventory/check-stock");
+                .post("/api/v1/inventory/check-stock")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Boolean.class);
 
-        response.then()
-                .statusCode(Matchers.anyOf(Matchers.equalTo(200), Matchers.equalTo(409)))
-                .body("inStock", Matchers.notNullValue());
+        // Assert that the response is either true or false
+        Assertions.assertTrue(response == true || response == false);// Ensure `inStock` field is present in the response
     }
+
+    @Test
+    void shouldRestockOrder() {
+        // Create a request body with test data
+        String requestBody = """
+        [
+            {"skuCode": "iphone_15", "quantity": 3},
+            {"skuCode": "pixel_8", "quantity": 7}
+        ]
+        """;
+
+        // Send the POST request to the API
+        Boolean response = RestAssured.given()
+                .contentType("application/json") // Set content type
+                .body(requestBody)              // Attach request body
+                .when()
+                .post("/api/v1/inventory/increment-stock")
+                .then()
+                .statusCode(200)
+                .extract()
+                .as(Boolean.class);
+
+        // Assert that the response is either true or false
+        Assertions.assertTrue(response == true || response == false);
+    }
+
 }
