@@ -86,23 +86,14 @@ public class InventoryController {
     }
 
     @PostMapping("/check-stock")
-    public ResponseEntity<StockCheckResponse> checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
+    @ResponseStatus(HttpStatus.OK)
+    public Boolean checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
         log.info("Received stock check request for orders: {}", orderRequests);
         try {
-            Boolean isInStock = inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
-            StockCheckResponse response = new StockCheckResponse(isInStock);
-
-            if (isInStock) {
-                log.info("Order is in stock and processed successfully");
-                return ResponseEntity.ok(response);
-            } else {
-                log.warn("Order cannot be fulfilled due to insufficient stock");
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-            }
+            return inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
         } catch (Exception e) {
             log.error("Error processing stock check request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new StockCheckResponse(false));
+            return false;
         }
     }
 
@@ -125,24 +116,13 @@ public class InventoryController {
     }
 
     @PostMapping("/increment-stock")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<StockCheckResponse> restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
-        log.info("Received stock check request for orders: {}", orderRequests);
+    public Boolean restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
+        log.info("Received stock increment request for orders: {}", orderRequests);
         try {
-            Boolean isInStock = inventoryService.restockInventory(orderRequests.toArray(new OrderRequest[0]));
-            StockCheckResponse response = new StockCheckResponse(isInStock);
-
-            if (isInStock) {
-                log.info("Order is in stock and processed successfully");
-                return ResponseEntity.ok(response);
-            } else {
-                log.warn("Order cannot be fulfilled due to insufficient stock");
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-            }
+            return inventoryService.restockInventory(orderRequests.toArray(new OrderRequest[0]));
         } catch (Exception e) {
-            log.error("Error processing stock check request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new StockCheckResponse(false));
+            log.error("Error processing stock increment request", e);
+            return false;
         }
     }
 }
