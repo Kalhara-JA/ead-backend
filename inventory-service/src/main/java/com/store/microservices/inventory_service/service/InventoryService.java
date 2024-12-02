@@ -220,68 +220,70 @@ public class InventoryService {
         return true;
     }
 
-
-
     public InventoryResponse addQuantity(String skuCode, Integer quantity) {
-        // Check if the product exists
-        try {
-            Optional<Inventory> inventoryOptional = inventoryRepository.findBySkuCode(skuCode);
-
-            if (skuCode == null || skuCode.trim().isEmpty()) {
-                return InventoryResponse.builder()
-                        .skuCode(skuCode)
-                        .isInStock(false)
-                        .availableQuantity(0)
-                        .status("INVALID_SKU_CODE")
-                        .build();
-            }
-
-            if (quantity == null || quantity <= 0) {
-                return InventoryResponse.builder()
-                        .skuCode(skuCode)
-                        .isInStock(false)
-                        .availableQuantity(0)
-                        .status("INVALID_QUANTITY")
-                        .build();
-            }
-
-        if (inventoryOptional.isEmpty()) {
-            // Return a response indicating the product doesn't exist
-            return InventoryResponse.builder()
-                    .skuCode(skuCode)
-                    .isInStock(false)
-                    .availableQuantity(0)
-                    .status("PRODUCT_NOT_FOUND") // Custom status to indicate the product is missing
-                    .build();
+        // Validate SKU code and quantity
+        if (skuCode == null || skuCode.trim().isEmpty()) {
+            return createErrorResponse(skuCode, "INVALID_SKU_CODE");
+        }
+        if (quantity == null || quantity <= 0) {
+            return createErrorResponse(skuCode, "INVALID_QUANTITY");
         }
 
-        Inventory inventory = inventoryOptional.get();
+        try {
+            // Check if the product exists
+            Optional<Inventory> inventoryOptional = inventoryRepository.findBySkuCode(skuCode);
+            log.info("Inventory Optional: {}", inventoryOptional);
+            Inventory inventory;
+            if (inventoryOptional.isEmpty()) {
+                // Product not found, create a new inventory item
+                inventory = new Inventory();
+                inventory.setSkuCode(skuCode);
+                inventory.setQuantity(0);
+                inventory.setLocation("Unknown");
+            } else {
+                // Product found, get the existing inventory
+                inventory = inventoryOptional.get();
+            }
 
-        // Update inventory quantity
-        inventory.setQuantity(inventory.getQuantity() + quantity);
+            log.info("Initial Inventory: {}", inventory);
 
-        // Update inventory status based on the new quantity
-        inventory.setStatus(determineStatus(inventory.getQuantity()));
+            // Add the new quantity
+            inventory.setQuantity(inventory.getQuantity() + quantity);
+            log.info("Updated Inventory: {}", inventory);
 
-        // Save the updated inventory
-        Inventory updatedInventory = inventoryRepository.save(inventory);
+            // Determine status based on new quantity
+            inventory.setStatus(determineStatus(inventory.getQuantity()));
 
-        // Build and return the response
-        return InventoryResponse.builder()
-                .skuCode(updatedInventory.getSkuCode())
-                .isInStock(updatedInventory.getQuantity() > 0)
-                .availableQuantity(updatedInventory.getQuantity())
-                .status(updatedInventory.getStatus())
-                .build();}
-        catch (DataAccessException ex){
-            log.error("Database error when restocking inventory", ex);
+            // Save updated or new inventory
+            Inventory updatedInventory = inventoryRepository.save(inventory);
+
+            // Build and return a success response
             return InventoryResponse.builder()
-                    .skuCode(skuCode)
-                    .isInStock(false)
-                    .availableQuantity(0)
-                    .status("DATABASE_ERROR")
+                    .skuCode(updatedInventory.getSkuCode())
+                    .isInStock(updatedInventory.getQuantity() > 0)
+                    .availableQuantity(updatedInventory.getQuantity())
+                    .status(updatedInventory.getStatus())
                     .build();
+
+        } catch (DataAccessException ex) {
+            log.error("Database error when restocking inventory for SKU: {}", skuCode, ex);
+            return createErrorResponse(skuCode, "DATABASE_ERROR");
+        } catch (Exception ex) {
+            log.error("Unexpected error when restocking inventory for SKU: {}", skuCode, ex);
+            return createErrorResponse(skuCode, "UNEXPECTED_ERROR");
         }
     }
+
+    // Helper method to determine status based on quantity
+    // Helper method to create error response
+    private InventoryResponse createErrorResponse(String skuCode, String errorCode) {
+        return InventoryResponse.builder()
+                .skuCode(skuCode)
+                .isInStock(false)
+                .availableQuantity(0)
+                .status("ERROR")
+                .build();
+    }
+    
 
 }
