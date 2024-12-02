@@ -21,6 +21,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+
     @PostMapping("/products")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse addProduct(@RequestParam String skuCode) {
