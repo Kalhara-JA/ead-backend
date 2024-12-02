@@ -37,7 +37,7 @@ public class OrderService {
             //Map OrderRequest items to InventoryRequest DTOs
         List<InventoryRequest> inventoryItems = orderRequest.items().stream()
                 .map(item -> {
-                    return new InventoryRequest(item.skuCode(), item.quantity(), "DECREMENT");
+                    return new InventoryRequest(item.skuCode(), item.quantity());
                 }).toList();
 
         //Decrement Inventory
@@ -208,7 +208,7 @@ public class OrderService {
             List<OrderItem> orderItems = orderItemRepository.findAllByOrder(order);
             List<InventoryRequest> inventoryItems = orderItems.stream()
                     .map(item -> {
-                        return new InventoryRequest(item.getSkuCode(), item.getQuantity(), "DECREMENT");
+                        return new InventoryRequest(item.getSkuCode(), item.getQuantity());
                     }).toList();
             log.info("Inventory Items : {}",inventoryItems);
 
@@ -233,7 +233,7 @@ public class OrderService {
                 }
 
                 // Return a success message
-                return "Order Canceled successfully ";
+                return "Order canceled successfully ";
             }else{
              throw new UserException("Order cancel failed");
             }
