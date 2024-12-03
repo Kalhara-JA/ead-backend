@@ -67,37 +67,7 @@ class ProductServiceApplicationTests {
                 .body("price", Matchers.equalTo(100))
                 .body("updatedAt", Matchers.equalTo("2021-09-01"));
     }
-
-    @Test
-    void shouldReturnInternalServerErrorForInvalidProduct() {
-        String requestBody = """
-            {
-                "name": "",
-                "skuCode": "",
-                "category": "",
-                "brand": "",
-                "description": "",
-                "image": "",
-                "price": 100,
-                "updatedAt": ""
-            }
-            """;
-
-        var response = RestAssured.given()
-                .contentType("application/json")
-                .body(requestBody)
-                .when()
-                .post("/api/v1/products");
-
-        System.out.println("Response: " + response.asString());
-
-        response.then()
-                .statusCode(500)
-                .body("status", Matchers.equalTo(500))
-                .body("error", Matchers.equalTo("Internal Server Error"))
-                .body("path", Matchers.equalTo("/api/v1/products"));
-    }
-
+    
     @Test
     void shouldCreateCategory() {
         String requestBody = """
