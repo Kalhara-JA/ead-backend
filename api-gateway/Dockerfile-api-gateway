@@ -1,20 +1,36 @@
-# Use an official lightweight Java image as the base image
-FROM openjdk:21-jdk-slim
+# Stage 1: Build the application
+FROM eclipse-temurin:21-jdk-alpine as builder
 
-# Install curl
-RUN apt-get update && apt-get install -y curl
-
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the JAR file from the build directory to the container
-COPY target/api-gateway-0.0.1-SNAPSHOT.jar api-gateway.jar
+# Copy Maven wrapper and project files
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
 
-# Expose the application port configured in application.properties
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy the rest of the application source code
+COPY src ./src
+
+# Build the application
+RUN ./mvnw package -DskipTests -B
+
+# Stage 2: Create a minimal runtime image
+FROM eclipse-temurin:21-jre-alpine
+
+# Set the working directory
+WORKDIR /app
+
+# Install curl
+RUN apk add --no-cache curl
+
+# Copy the built JAR file from the builder stage
+COPY --from=builder /app/target/api-gateway-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the application port
 EXPOSE 9000
 
-# Set environment variables (if needed, adjust as required)
-ENV SPRING_PROFILES_ACTIVE=prod
-
-# Default command to run the JAR file
-ENTRYPOINT ["java", "-jar", "api-gateway.jar"]
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

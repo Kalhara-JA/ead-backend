@@ -30,6 +30,13 @@ public class SecurityConfig {
                     // Permit all requests for free resources
                     authorize.requestMatchers(SecurityRouteConfig.FREE_RESOURCE_URLS).permitAll();
 
+                    // Allow specific HTTP methods for partially secured routes
+                    SecurityRouteConfig.PARTIALLY_SECURED_ROUTES.forEach((route, methods) -> {
+                        for (HttpMethod method : methods) {
+                            authorize.requestMatchers(method, route).permitAll();
+                        }
+                    });
+
                     // Secure GET routes
                     for (Map.Entry<String, String[]> entry : SecurityRouteConfig.SECURED_GET_ROUTES.entrySet()) {
                         authorize.requestMatchers(HttpMethod.GET, entry.getKey()).hasAnyAuthority(entry.getValue());
@@ -52,7 +59,7 @@ public class SecurityConfig {
                     }
 
                     // All other requests require authentication
-                    authorize.anyRequest().authenticated();
+                    authorize.anyRequest().denyAll();
                 })
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(customJwtAuthenticationConverter())))

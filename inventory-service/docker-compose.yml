@@ -1,4 +1,5 @@
 version: '4'
+
 services:
   mysql:
     image: mysql:8.3.0
@@ -9,4 +10,27 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
     volumes:
       - ./mysql:/var/lib/mysql
-      - ./docker/mysql_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/mysql_init/mysql_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: Dockerfile-inventory-service
+    container_name: inventory-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql_store_inventory_service:3306/inventory_service
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - mysql
+    networks:
+      - app_network
+
+networks:
+  app_network:

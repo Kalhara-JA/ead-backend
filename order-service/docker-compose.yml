@@ -10,6 +10,9 @@ services:
     volumes:
       - ./mysql:/var/lib/mysql
       - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     hostname: zookeeper
@@ -19,6 +22,8 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - app_network
 
   broker:
     image: confluentinc/cp-kafka:7.5.0
@@ -34,6 +39,8 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - app_network
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
@@ -47,6 +54,9 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+    networks:
+      - app_network
+
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -58,5 +68,35 @@ services:
     environment:
       KAFKA_CLUSTERS_NAME: local
       KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
-#     KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8081
+      KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8081
       DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - app_network
+
+  order-service:
+    container_name: order-service
+    build:
+      context: .
+      dockerfile: Dockerfile-order-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_APPLICATION_NAME: order-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/order_service
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SERVER_PORT: 8081
+      INVENTORY_URL: http://inventory-service:8082
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      SPRING_KAFKA_TEMPLATE_DEFAULT_TOPIC: order-placed
+      SPRING_KAFKA_PRODUCER_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on:
+      - mysql
+      - broker
+      - schema-registry
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
