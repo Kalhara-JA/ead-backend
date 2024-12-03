@@ -65,6 +65,13 @@ public class ProductService {
                 product.getUpdatedAt());
     }
 
+    public class ProductAlreadyExistsException extends RuntimeException {
+        public ProductAlreadyExistsException(String message) {
+            super(message);
+        }
+    }
+
+
     public CategoryResponse createCategory(CategoryRequest categoryRequest){
         Category category = Category.builder()
                 .name(categoryRequest.name())

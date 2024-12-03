@@ -10,6 +10,8 @@ import java.util.List;
 
 
 public interface InventoryClient {
+
+
     @PostExchange("/api/v1/inventory/products")
     Boolean addProductToInventory(@RequestBody String skuCode);
 
