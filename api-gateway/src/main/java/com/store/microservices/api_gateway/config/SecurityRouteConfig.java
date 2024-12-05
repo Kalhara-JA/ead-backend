@@ -25,7 +25,8 @@ public class SecurityRouteConfig {
 
     // Define secured routes with their required roles
     public static final Map<String, String[]> SECURED_GET_ROUTES = Map.of(
-            "/api/v1/inventory/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
+            "/api/v1/inventory/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()},
+            "/api/v1/products/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
     );
 
     public static final Map<String, String[]> SECURED_POST_ROUTES = Map.of(
