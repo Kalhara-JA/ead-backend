@@ -30,19 +30,58 @@ public class InventoryService {
         return inventoryRepository.existsBySkuCodeAndQuantityIsGreaterThanEqual(skuCode, quantity);
     }
 
-    public InventoryResponse addProduct(String skuCode){
+    public InventoryResponse addProduct(String skuCode) {
+        // Check if the product already exists
+        Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(skuCode);
+
+        // If the product already exists, return its current details
+        if (existingItem.isPresent()) {
+            Inventory item = existingItem.get();
+            return InventoryResponse.builder()
+                    .skuCode(item.getSkuCode())
+                    .isInStock(item.getQuantity() > 0)
+                    .availableQuantity(item.getQuantity())
+                    .status(item.getStatus())
+                    .build();
+        }
+
+        // If the product doesn't exist, create a new inventory item
         Inventory item = new Inventory();
         item.setSkuCode(skuCode);
         item.setQuantity(0);
         item.setLocation("Unknown");
         item.setStatus("OUT_OF_STOCK");
         Inventory savedItem = inventoryRepository.save(item);
+
         return InventoryResponse.builder()
                 .skuCode(savedItem.getSkuCode())
                 .isInStock(savedItem.getQuantity() > 0)
                 .availableQuantity(savedItem.getQuantity())
                 .status(savedItem.getStatus())
                 .build();
+    }
+
+    @Transactional
+    public Boolean deleteProduct(String skuCode) {
+        // Check if the product exists
+        Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(skuCode);
+
+        // If the product doesn't exist, return false
+        if (existingItem.isEmpty()) {
+            log.warn("Attempted to delete non-existent product with SKU: {}", skuCode);
+            return false;
+        }
+
+        try {
+            // Delete the product from the inventory
+            inventoryRepository.deleteBySkuCode(skuCode);
+            log.info("Product with SKU {} successfully deleted", skuCode);
+            return true;
+        } catch (Exception e) {
+            // Log any unexpected errors during deletion
+            log.error("Error deleting product with SKU: {}", skuCode, e);
+            return false;
+        }
     }
 
     @Transactional(readOnly = true)

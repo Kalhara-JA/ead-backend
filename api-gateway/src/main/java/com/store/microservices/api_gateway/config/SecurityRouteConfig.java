@@ -44,6 +44,8 @@ public class SecurityRouteConfig {
     );
 
     public static final Map<String, String[]> SECURED_DELETE_ROUTES = Map.of(
-            "/api/v1/products/**", new String[]{UserRole.ADMIN.toString()}
-    );
+            "/api/v1/products/**", new String[]{UserRole.ADMIN.toString()},
+            "/api/v1/inventory/**", new String[]{UserRole.CUSTOMER.toString(), UserRole.ADMIN.toString()}
+
+            );
 }
