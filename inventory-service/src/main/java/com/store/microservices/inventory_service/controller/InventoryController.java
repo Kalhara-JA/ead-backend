@@ -32,6 +32,15 @@ public class InventoryController {
 
     }
 
+    @DeleteMapping("/products")
+    @ResponseStatus(HttpStatus.OK)
+    public Boolean deleteProduct(@RequestBody String skuCode) {
+        log.info("Received request to delete product with SKU code: {}", skuCode);
+        Boolean response = inventoryService.deleteProduct(skuCode);
+        log.info("Product with SKU code: {} deleted successfully, Response: {}", skuCode, response);
+        return response != null;
+    }
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> fetchAllInventory() {

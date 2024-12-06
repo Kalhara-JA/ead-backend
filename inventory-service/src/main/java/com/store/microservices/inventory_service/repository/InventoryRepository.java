@@ -16,4 +16,6 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     List<Inventory> findByQuantityLessThanEqual(Integer threshold);
 
     List<Inventory> findBySkuCodeOrderByQuantityDesc(String skuCode);
+
+    void deleteBySkuCode(String skuCode);
 }
