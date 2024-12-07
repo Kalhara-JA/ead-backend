@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 
+
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -19,6 +20,7 @@ class InventoryServiceApplicationTests {
 
     @LocalServerPort
     private Integer port;
+
 
     private static final String BASE_URI = "http://localhost";
     private static final String INVENTORY_ENDPOINT = "/api/v1/inventory";
@@ -78,6 +80,8 @@ class InventoryServiceApplicationTests {
                 .body(Matchers.equalTo("true")); // Ensure the response matches the Boolean return type
     }
 
+    private static final String WAREHOUSE_ENDPOINT = "/api/v1/inventory/warehouse";
+
     @Test
     void shouldFetchAllInventory() {
         RestAssured.given()
@@ -104,6 +108,86 @@ class InventoryServiceApplicationTests {
     }
 
     @Test
+    void shouldGetAllWarehouses() {
+        RestAssured.given()
+                .when()
+                .get(WAREHOUSE_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("size()", greaterThanOrEqualTo(0)); // Check at least zero results.
+    }
+
+    @Test
+    void shouldCreateWarehouse() {
+        final String warehouseName = "Central Warehouse";
+        final String warehouseAddress = "123 Main St, Cityville";
+        final String warehouseManager = "John Doe";
+
+        // Create request payload using variables
+        var warehouseRequest = """
+        {
+            "name": "%s",
+            "address": "%s",
+            "managerName": "%s"
+        }
+        """.formatted(warehouseName, warehouseAddress, warehouseManager);
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(warehouseRequest)
+                .when()
+                .post(WAREHOUSE_ENDPOINT)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(warehouseName))
+                .body("address", equalTo(warehouseAddress))
+                .body("managerName", equalTo(warehouseManager));
+    }
+
+    @Test
+    void shouldUpdateWarehouse() {
+        // Define reusable variables
+        final int warehouseId = 1; // ID of the warehouse to be updated
+        final String updatedName = "Updated Warehouse";
+        final String updatedAddress = "456 New Rd, Townsville";
+        final String updatedManagerName = "Jane Smith";
+
+        // Create request payload using variables
+        var warehouseRequest = """
+        {
+            "name": "%s",
+            "address": "%s",
+            "managerName": "%s"
+        }
+        """.formatted(updatedName, updatedAddress, updatedManagerName);
+
+        // Assume the warehouse with ID 1 exists (or you may create it as a pre-step).
+        RestAssured.given()
+                .contentType("application/json")
+                .body(warehouseRequest)
+                .when()
+                .put(WAREHOUSE_ENDPOINT + "/" + warehouseId)
+                .then()
+                .statusCode(200)
+                .body("name", equalTo(updatedName))
+                .body("address", equalTo(updatedAddress))
+                .body("managerName", equalTo(updatedManagerName));
+    }
+
+    @Test
+    void shouldDeleteWarehouse() {
+        final int warehouseId = 1; // ID of the warehouse to delete
+        final String expectedResponseMessage = "Warehouse with ID %d has been deleted successfully".formatted(warehouseId);
+        RestAssured.given()
+                .when()
+                .delete(WAREHOUSE_ENDPOINT + "/" + warehouseId)
+                .then()
+                .statusCode(200)
+                .body(equalTo(expectedResponseMessage)); // Check response message.
+    }
+
+
+
     void shouldReturnLowStockItems() {
         RestAssured.given()
                 .when()
