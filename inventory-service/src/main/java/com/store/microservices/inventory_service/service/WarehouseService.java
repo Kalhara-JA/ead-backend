@@ -38,28 +38,37 @@ public class WarehouseService {
     }
 
     public WarehouseResponse updateWarehouse(Long id, WarehouseRequest updatedWarehouse) {
-        Optional<Warehouse> warehouse =  warehouseRepository.findById(id);
-        if(warehouse.isEmpty()){
+        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(id);
+        if (warehouseOptional.isEmpty()) {
             throw new RuntimeException("Warehouse not found");
         }
-        Warehouse item = warehouse.get();
 
-        item.setName(updatedWarehouse.getName());
-        item.setAddress(updatedWarehouse.getAddress());
-        item.setManagerName(updatedWarehouse.getManagerName());
-        Warehouse updatedItem =  warehouseRepository.save(item);
-        return  mapToResponse(updatedItem);
+        Warehouse warehouse = warehouseOptional.get();
+
+        // Only update non-null fields
+        if (updatedWarehouse.getName() != null) {
+            warehouse.setName(updatedWarehouse.getName());
+        }
+        if (updatedWarehouse.getAddress() != null) {
+            warehouse.setAddress(updatedWarehouse.getAddress());
+        }
+        if (updatedWarehouse.getManagerName() != null) {
+            warehouse.setManagerName(updatedWarehouse.getManagerName());
+        }
+
+        Warehouse updatedEntity = warehouseRepository.save(warehouse);
+        return mapToResponse(updatedEntity);
     }
+
 
     public String deleteWarehouse(Long id) {
         if (!warehouseRepository.existsById(id)) {
             throw new RuntimeException("Warehouse with ID " + id + " does not exist");
         }
         warehouseRepository.deleteById(id);
-        return "Warehouse with ID " + id + " has been successfully deleted.";
+        return "Warehouse with ID " + id + " has been deleted successfully";
     }
-
-
+    
 
     private Warehouse mapToEntity(WarehouseRequest warehouseRequest) {
         Warehouse warehouse = new Warehouse();
@@ -75,6 +84,7 @@ public class WarehouseService {
         warehouseResponse.setName(warehouse.getName());
         warehouseResponse.setAddress(warehouse.getAddress());
         warehouseResponse.setManagerName(warehouse.getManagerName());
+
         return warehouseResponse;
     }
 }
