@@ -1,13 +1,17 @@
 package com.store.microservices.order_service.controller;
 
 
+import com.store.microservices.order_service.dto.OrderPlaceResponse;
 import com.store.microservices.order_service.dto.OrderRequest;
 import com.store.microservices.order_service.dto.OrderResponse;
+import com.store.microservices.order_service.dto.UserException;
 import com.store.microservices.order_service.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -18,11 +22,24 @@ public class OrderController {
     private final OrderService orderService;
 
 
+
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String placeOrder(@RequestBody OrderRequest orderRequest) {
-        orderService.placeOrder(orderRequest);
-        return "Order placed successfully";
+    public ResponseEntity<OrderPlaceResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
+        OrderPlaceResponse orderPlaceResponse;
+        try {
+            orderPlaceResponse = orderService.placeOrder(orderRequest);
+            return ResponseEntity.status(HttpStatus.CREATED).body(orderPlaceResponse);
+        } catch (UserException ex) {
+            // Handle UserException, possibly with specific error details
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
+        } catch (Exception ex) {
+            // Handle general exceptions
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, "Order Place failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
+        }
     }
 
     @GetMapping
@@ -31,31 +48,67 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
-    @GetMapping("getOrderById/{id}")
+    @GetMapping("{orderNumber}")
     @ResponseStatus(HttpStatus.OK)
-    public OrderResponse getOrderById(@PathVariable Long id) {
-        return orderService.getOrderById(id);
+    public OrderResponse getOrderById(@PathVariable String orderNumber) {
+        return orderService.getOrderByOrderNumber(orderNumber);
     }
 
-    @GetMapping("getOrderByUser/{email}")
+    @GetMapping("user/{email}/orders")
     @ResponseStatus(HttpStatus.OK)
     public List<OrderResponse> getOrderByUser(@PathVariable String email) {
         return orderService.getOrderByUser(email);
     }
-    @PutMapping("doPayment/{id}")
+
+    @PutMapping("{id}/payment")
     @ResponseStatus(HttpStatus.OK)
-    public String updateOrderStatus(@PathVariable Long id) {
-        return orderService.doPayment(id);
+    public ResponseEntity<String> updateOrderStatus(@PathVariable Long id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(orderService.doPayment(id));
+        }catch (UserException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Payment Failed");
+        }
     }
-    @PutMapping("cancelPayment/{id}")
+
+    @PutMapping("{id}/cancel")
     @ResponseStatus(HttpStatus.OK)
-    public String cancelPayment(@PathVariable Long id) {
-        return orderService.cancelOrder(id);
+    public ResponseEntity<String> cancelOrder(@PathVariable Long id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(orderService.cancelOrder(id));
+        }catch (UserException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        }catch (Exception ex){
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cancel order failed..");
+        }
     }
-    @PutMapping("changeDeliveryStatus/{id}/status/{status}")
+
+    @PutMapping("{id}/ship")
     @ResponseStatus(HttpStatus.OK)
-    public String updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
-        return orderService.updateOrderDeliveryStatus(id, status);
+    public ResponseEntity<String> shipOrder(@PathVariable Long id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body( orderService.shipOrder(id));
+        } catch (UserException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        } catch (Exception ex){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to ship order");
+        }
+
+    }
+
+
+    @PutMapping("{id}/deliver")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<String> deliverOrder(@PathVariable Long id) {
+        try {
+            return ResponseEntity.status(HttpStatus.OK).body(orderService.deliverOrder(id));
+        } catch (UserException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
+        } catch (Exception ex){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to deliver order");
+        }
+
     }
 
 }

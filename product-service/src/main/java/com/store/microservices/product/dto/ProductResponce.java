@@ -10,6 +10,7 @@ public record ProductResponce(
         String brand,
         String description,
         String image,
-        BigDecimal price) {
+        BigDecimal price,
+        String updatedAt) {
 }
 

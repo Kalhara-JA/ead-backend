@@ -10,6 +10,10 @@ public record ProductRequest(
         String brand,
         String description,
         String image,
-        BigDecimal price) {
+        BigDecimal price,
+
+        String updatedAt
+
+) {
 
 }

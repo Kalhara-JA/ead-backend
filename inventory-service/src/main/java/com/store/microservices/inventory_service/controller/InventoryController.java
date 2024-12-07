@@ -1,6 +1,5 @@
 package com.store.microservices.inventory_service.controller;
 
-import com.store.microservices.inventory_service.dto.InventoryRequest;
 import com.store.microservices.inventory_service.dto.InventoryResponse;
 import com.store.microservices.inventory_service.dto.OrderRequest;
 import com.store.microservices.inventory_service.dto.StockCheckResponse;
@@ -10,8 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import lombok.extern.slf4j.Slf4j;  // This provides the log variable
-
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
@@ -23,67 +21,118 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+
+    @PostMapping("/products")
+    @ResponseStatus(HttpStatus.OK)
+    public Boolean addProduct(@RequestBody String skuCode) {
+        log.info("Received request to add product with SKU code: {}", skuCode);
+        InventoryResponse response = inventoryService.addProduct(skuCode);
+        log.info("Product with SKU code: {} added successfully, Response: {}", skuCode, response);
+        return response != null;
+
+    }
+
+    @DeleteMapping("/products")
+    @ResponseStatus(HttpStatus.OK)
+    public Boolean deleteProduct(@RequestBody String skuCode) {
+        log.info("Received request to delete product with SKU code: {}", skuCode);
+        Boolean response = inventoryService.deleteProduct(skuCode);
+        log.info("Product with SKU code: {} deleted successfully, Response: {}", skuCode, response);
+        return response != null;
+    }
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> fetchAllInventory() {
-        return inventoryService.getAllInventory();
+        log.info("Fetching all inventory items");
+        List<Inventory> inventoryList = inventoryService.getAllInventory();
+        log.info("Fetched {} inventory items", inventoryList.size());
+        return inventoryList;
     }
 
-    @PostMapping
+    @GetMapping("/checkStock")
     @ResponseStatus(HttpStatus.OK)
-    public InventoryResponse addInventory(@RequestBody InventoryRequest request){
-        return inventoryService.addInventory(request);
+    public InventoryResponse isInStock(@RequestParam String skuCode, @RequestParam Integer quantity) {
+        log.info("Checking stock for SKU code: {}, Quantity: {}", skuCode, quantity);
+        InventoryResponse response = inventoryService.isInStock(skuCode, quantity);
+        log.info("Stock check for SKU code: {} completed, Response: {}", skuCode, response);
+        return response;
     }
 
-    @GetMapping("/check")
+    @GetMapping("/getProductQuantity/{skuCode}")
     @ResponseStatus(HttpStatus.OK)
-    public InventoryResponse isInStock(@RequestParam String skuCode, @RequestParam Integer quantity){
-        return inventoryService.isInStock(skuCode,quantity);
+    public Integer getProductQuantity(@PathVariable String skuCode) {
+        log.info("Fetching quantity for SKU code: {}", skuCode);
+        Integer quantity = inventoryService.getProductQuantity(skuCode);
+        log.info("Fetched quantity: {} for SKU code: {}", quantity, skuCode);
+        return quantity;
     }
 
 
     @GetMapping("/all")
     @ResponseStatus(HttpStatus.OK)
-    public List<Inventory> getAllInventory(){
-        return inventoryService.getAllInventory();
+    public List<Inventory> getAllInventory() {
+        log.info("Fetching all inventory items");
+        List<Inventory> inventoryList = inventoryService.getAllInventory();
+        log.info("Fetched {} inventory items", inventoryList.size());
+        return inventoryList;
     }
 
     @PostMapping("/deduct")
     @ResponseStatus(HttpStatus.OK)
-    public InventoryResponse deductInventory(
-            @RequestParam String skuCode,@RequestParam Integer quantity){
-
-        return inventoryService.reduceStock(skuCode,quantity);
-    }
-
-    @PostMapping("/check-stock")
-    public ResponseEntity<StockCheckResponse> checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
-        log.info("Received stock check request for orders: {}", orderRequests);
+    public InventoryResponse deductStock(
+            @RequestParam String skuCode,
+            @RequestParam Integer quantity
+    ) {
+        log.info("Received request to deduct stock for SKU code: {}, Quantity: {}", skuCode, quantity);
         try {
-            boolean isInStock = inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
-            StockCheckResponse response = new StockCheckResponse(isInStock);
-
-            if (isInStock) {
-                log.info("Order is in stock and processed successfully");
-                return ResponseEntity.ok(response);
-            } else {
-                log.warn("Order cannot be fulfilled due to insufficient stock");
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-            }
-        } catch (Exception e) {
-            log.error("Error processing stock check request", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new StockCheckResponse(false));
+            InventoryResponse response = inventoryService.reduceStock(skuCode, quantity);
+            log.info("Stock deduction for SKU code: {} completed, Response: {}", skuCode, response);
+            return response;
+        } catch (Exception ex) {
+            log.error("Error during stock deduction for SKU code: {}", skuCode, ex);
+            throw ex; // or handle as appropriate
         }
     }
 
-
-
+    @PostMapping("/check-stock")
+    @ResponseStatus(HttpStatus.OK)
+    public Boolean checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
+        log.info("Received stock check request for orders: {}", orderRequests);
+        try {
+            return inventoryService.orderIsInStock(orderRequests.toArray(new OrderRequest[0]));
+        } catch (Exception e) {
+            log.error("Error processing stock check request", e);
+            return false;
+        }
+    }
 
     @GetMapping("/low-stock")
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> getLowStockItems() {
-        return inventoryService.getLowStockItems();
+        log.info("Fetching items with low stock levels");
+        List<Inventory> lowStockItems = inventoryService.getLowStockItems();
+        log.info("Fetched {} low-stock items", lowStockItems.size());
+        return lowStockItems;
     }
 
+    @PostMapping("/restock")
+    @ResponseStatus(HttpStatus.OK)
+    public InventoryResponse restockInventory(@RequestParam String skuCode, @RequestParam Integer quantity) {
+        log.info("Received request to restock inventory for SKU code: {}, Quantity: {}", skuCode, quantity);
+        InventoryResponse response = inventoryService.addQuantity(skuCode, quantity);
+        log.info("Inventory restock for SKU code: {} completed, Response: {}", skuCode, response);
+        return response;
+    }
+
+    @PostMapping("/increment-stock")
+    public Boolean restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
+        log.info("Received stock increment request for orders: {}", orderRequests);
+        try {
+            return inventoryService.restockInventory(orderRequests.toArray(new OrderRequest[0]));
+        } catch (Exception e) {
+            log.error("Error processing stock increment request", e);
+            return false;
+        }
+    }
 }

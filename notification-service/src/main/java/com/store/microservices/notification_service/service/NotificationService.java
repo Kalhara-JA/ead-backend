@@ -1,5 +1,6 @@
 package com.store.microservices.notification_service.service;
 
+import com.store.microservices.order_service.event.OrderCancelEvent;
 import com.store.microservices.order_service.event.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,33 @@ public class NotificationService {
         } catch (MailException e) {
             log.error("Error while sending email", e);
             throw new RuntimeException("Error while sending email to " + orderPlacedEvent.getEmail());
+        }
+    }
+
+    @KafkaListener(topics = "order-cancel")
+    public void listen(OrderCancelEvent orderCancelEvent) {
+        log.info("Got Message from order-cancel topic {}", orderCancelEvent);
+        MimeMessagePreparator mimeMessagePreparator = mimeMessage -> {
+            MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
+            messageHelper.setFrom("springshop@gmail.com");
+            messageHelper.setTo(orderCancelEvent.getEmail().toString());
+            messageHelper.setSubject("Your Order with Order Number " + orderCancelEvent.getOrderNumber() + " has been cancel successfully");
+            messageHelper.setText(String.format("""
+                    <html>
+                        <body>
+                            <p>Your Order with Order Number %s has been cancel successfully</p>
+                            <p>Thank you for shopping with us</p>
+                        </body>
+                    </html>
+                    """, orderCancelEvent.getOrderNumber()), true);
+        };
+
+        try {
+            javaMailSender.send(mimeMessagePreparator);
+            log.info("Order Notification Email Sent Successfully");
+        } catch (MailException e) {
+            log.error("Error while sending email", e);
+            throw new RuntimeException("Error while sending email to " + orderCancelEvent.getEmail());
         }
     }
 }
