@@ -64,7 +64,19 @@ class InventoryServiceApplicationTests {
                 .statusCode(200)
                 .body(Matchers.equalTo("true")); // Ensure the response matches the Boolean return type
     }
+    @Test
+    void shouldDeleteProductFromInventory() {
+        String skuCode = "iphone_17";
 
+        RestAssured.given()
+                .contentType("application/json")
+                .body(skuCode)
+                .when()
+                .delete(INVENTORY_ENDPOINT + "/products")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("true")); // Ensure the response matches the Boolean return type
+    }
 
     @Test
     void shouldFetchAllInventory() {
