@@ -1,6 +1,7 @@
 package com.store.microservices.inventory_service;
 
 import io.restassured.RestAssured;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -114,7 +115,7 @@ class InventoryServiceApplicationTests {
                 .get(WAREHOUSE_ENDPOINT)
                 .then()
                 .statusCode(200)
-                .body("size()", greaterThanOrEqualTo(0)); // Check at least zero results.
+                .body("size()", Matchers.greaterThanOrEqualTo(0)); // Check at least zero results.
     }
 
     @Test
@@ -139,9 +140,9 @@ class InventoryServiceApplicationTests {
                 .post(WAREHOUSE_ENDPOINT)
                 .then()
                 .statusCode(200)
-                .body("name", equalTo(warehouseName))
-                .body("address", equalTo(warehouseAddress))
-                .body("managerName", equalTo(warehouseManager));
+                .body("name", Matchers.equalTo(warehouseName))
+                .body("address", Matchers.equalTo(warehouseAddress))
+                .body("managerName", Matchers.equalTo(warehouseManager));
     }
 
     @Test
@@ -169,9 +170,9 @@ class InventoryServiceApplicationTests {
                 .put(WAREHOUSE_ENDPOINT + "/" + warehouseId)
                 .then()
                 .statusCode(200)
-                .body("name", equalTo(updatedName))
-                .body("address", equalTo(updatedAddress))
-                .body("managerName", equalTo(updatedManagerName));
+                .body("name", Matchers.equalTo(updatedName))
+                .body("address", Matchers.equalTo(updatedAddress))
+                .body("managerName", Matchers.equalTo(updatedManagerName));
     }
 
     @Test
@@ -183,7 +184,7 @@ class InventoryServiceApplicationTests {
                 .delete(WAREHOUSE_ENDPOINT + "/" + warehouseId)
                 .then()
                 .statusCode(200)
-                .body(equalTo(expectedResponseMessage)); // Check response message.
+                .body(Matchers.equalTo(expectedResponseMessage)); // Check response message.
     }
 
 
