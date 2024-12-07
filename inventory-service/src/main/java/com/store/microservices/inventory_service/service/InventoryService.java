@@ -278,18 +278,14 @@ public class InventoryService {
             // Check if the product exists
             Optional<Inventory> inventoryOptional = inventoryRepository.findBySkuCode(skuCode);
             log.info("Inventory Optional: {}", inventoryOptional);
-            Inventory inventory;
             if (inventoryOptional.isEmpty()) {
-                // Product not found, create a new inventory item
-                inventory = new Inventory();
-                inventory.setSkuCode(skuCode);
-                inventory.setQuantity(0);
-                inventory.setLocation("Unknown");
-            } else {
-                // Product found, get the existing inventory
-                inventory = inventoryOptional.get();
+                // Product not found, return an error response
+                log.warn("Product with SKU code {} not found in inventory.", skuCode);
+                return createErrorResponse(skuCode, "PRODUCT_NOT_AVAILABLE");
             }
 
+            // Product found, get the existing inventory
+            Inventory inventory = inventoryOptional.get();
             log.info("Initial Inventory: {}", inventory);
 
             // Add the new quantity
@@ -299,7 +295,7 @@ public class InventoryService {
             // Determine status based on new quantity
             inventory.setStatus(determineStatus(inventory.getQuantity()));
 
-            // Save updated or new inventory
+            // Save updated inventory
             Inventory updatedInventory = inventoryRepository.save(inventory);
 
             // Build and return a success response
@@ -318,6 +314,7 @@ public class InventoryService {
             return createErrorResponse(skuCode, "UNEXPECTED_ERROR");
         }
     }
+
 
     // Helper method to determine status based on quantity
     // Helper method to create error response
