@@ -1,10 +1,7 @@
 package com.store.microservices.product.controller;
 
-import com.store.microservices.product.dto.CategoryRequest;
-import com.store.microservices.product.dto.CategoryResponse;
-import com.store.microservices.product.dto.ProductRequest;
-import com.store.microservices.product.dto.ProductResponce;
-import com.store.microservices.product.service.ProductService;
+import com.store.microservices.product.dto.*;
+import com.store.microservices.product.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +28,7 @@ public class ProductController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<ProductResponce> getAllProducts(){
+    public List<InventoryResponse> getAllProducts(){
         return productService.getAllProducts();
     }
 

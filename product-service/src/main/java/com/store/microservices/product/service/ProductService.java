@@ -1,7 +1,7 @@
 package com.store.microservices.product.service;
 
 
-import com.store.microservices.product.client.InventoryClient;
+import com.store.microservices.product.client.*;
 import com.store.microservices.product.dto.InventoryResponse;
 import com.store.microservices.product.dto.CategoryRequest;
 import com.store.microservices.product.dto.CategoryResponse;
@@ -18,6 +18,8 @@ import org.springframework.stereotype.Service;
 
 import javax.lang.model.util.Elements;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -88,22 +90,39 @@ public class ProductService {
     }
 
 
-    public List<ProductResponce> getAllProducts(){
+    public List<InventoryResponse> getAllProducts() {
         log.info("Fetching All Products");
+
+        // Fetch inventory data
+        List<InventoryResponse> inventoryList = inventoryClient.getAllInventory();
+        log.info("Fetched Inventory Data");
+
+        // Build a map for quick lookup by skuCode
+        Map<String, InventoryResponse> inventoryMap = inventoryList.stream()
+                .collect(Collectors.toMap(InventoryResponse::skuCode, inventory -> inventory));
+
+        // Fetch all products and map to ProductResponce
         return productRepository.findAll()
                 .stream()
-                .map(product -> new ProductResponce(
-                        product.getId(),
-                        product.getName(),
-                        product.getSkuCode(),
-                        product.getCategory(),
-                        product.getBrand(),
-                        product.getDescription(),
-                        product.getImage(),
-                        product.getPrice(),
-                        product.getUpdatedAt()))
+                .map(product -> {
+                    InventoryResponse inventory = inventoryMap.get(product.getSkuCode());
+
+                    return new InventoryResponse(
+                            product.getId(),
+                            product.getName(),
+                            product.getSkuCode(),
+                            product.getCategory(),
+                            product.getBrand(),
+                            product.getDescription(),
+                            product.getImage(),
+                            product.getPrice(),
+                            product.getUpdatedAt(),
+                            inventory != null ? inventory.quantity() : 0 // Add quantity or default to 0
+                    );
+                })
                 .toList();
     }
+
 
 
     public List<CategoryResponse> getAllCategories(){
@@ -135,6 +154,7 @@ public class ProductService {
                 product.getUpdatedAt());
     }
 
+
     public InventoryResponse getProductQuantity(String skuCode) {
         log.info("Fetching Product Quantity");
         Integer quantity = inventoryClient.getProductQuantity(skuCode);
@@ -151,6 +171,7 @@ public class ProductService {
                 product.getDescription(),
                 product.getImage(),
                 product.getPrice(),
+                product.getUpdatedAt(),
                 quantity);
     }
 
@@ -199,9 +220,14 @@ public class ProductService {
                 product.getUpdatedAt());
     }
 
-    public String deleteProduct(String productId) {
+    public String deleteProduct(String skuCode) {
+        if(!inventoryClient.deleteProductFromInventory(skuCode)){
+            log.info("Product deletion failed!");
+            throw new RuntimeException("Product deletion failed!");
+        }
+
         log.info("Deleting Product");
-        productRepository.deleteById(productId);
+        productRepository.deleteBySkuCode(skuCode);
         return "Product Deleted";
     }
 

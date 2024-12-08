@@ -94,12 +94,16 @@ class ProductServiceApplicationTests {
 
     @Test
     void shouldReturnAllProducts() {
+
+
+        InventoryClientStub.stubInventoryQuantityCall();
         var response = RestAssured.given()
                 .contentType("application/json")
                 .when()
                 .get("/api/v1/products");
 
         System.out.println("Response: " + response.asString());
+
 
         response.then().statusCode(200);
 
@@ -169,6 +173,7 @@ class ProductServiceApplicationTests {
         // Given
         String productId = "67424340412b017af037c032";
 
+        InventoryClientStub.stubInventoryDeleteCall("product_1");
         // When
         var response = RestAssured.given()
                 .contentType("application/json")

@@ -10,6 +10,10 @@ public record InventoryResponse(
         String brand,
         String description,
         String image,
-        BigDecimal price, Integer quantity) {
+        BigDecimal price,
+
+        String updatedAt,
+        Integer quantity) {
+
 }
 

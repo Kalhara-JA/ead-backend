@@ -69,7 +69,7 @@ public class InventoryController {
     }
 
 
-        @GetMapping("/all")
+    @GetMapping("/all")
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> getAllInventory() {
         log.info("Fetching all inventory items");
