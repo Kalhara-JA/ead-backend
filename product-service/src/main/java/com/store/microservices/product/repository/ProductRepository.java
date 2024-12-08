@@ -7,5 +7,6 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import javax.lang.model.util.Elements;
 
 public interface ProductRepository extends MongoRepository<Product, String> {
+    Origin deleteBySkuCode(String skuCode);
     Origin findBySkuCode(String skuCode);
 }
