@@ -135,4 +135,13 @@ public class InventoryController {
             return false;
         }
     }
+
+    @PostMapping("/change-warehouse")
+    @ResponseStatus(HttpStatus.OK)
+    public InventoryResponse changeWarehouse(@RequestParam String skuCode, @RequestParam String location) {
+        log.info("Received request to change warehouse for SKU code: {}, Warehouse: {}", skuCode, location);
+        InventoryResponse response = inventoryService.changeWarehouse(skuCode, location);
+        log.info("Warehouse change for SKU code: {} completed, Response: {}", skuCode, response);
+        return response;
+    }
 }

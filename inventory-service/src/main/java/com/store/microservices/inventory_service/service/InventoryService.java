@@ -219,6 +219,37 @@ public class InventoryService {
         return true; // Order successfully fulfilled
     }
 
+    @Transactional
+    public InventoryResponse changeWarehouse(String skuCode, String location) {
+        Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
+        if (inventory.isEmpty()) {
+            throw new RuntimeException("Product with SKU " + skuCode + " not found");
+        }
+
+        Inventory item = inventory.get();
+
+        // Only update if the location is different
+        if (!item.getLocation().equals(location)) {
+            item.setLocation(location);
+            log.info(item.getLocation());
+            Inventory updatedItem = inventoryRepository.save(item);
+            return InventoryResponse.builder()
+                    .skuCode(updatedItem.getSkuCode())
+                    .isInStock(updatedItem.getQuantity() > 0)
+                    .availableQuantity(updatedItem.getQuantity())
+                    .status(updatedItem.getStatus())
+                    .build();
+        }
+
+        // If location is the same, return existing item details
+        return InventoryResponse.builder()
+                .skuCode(item.getSkuCode())
+                .isInStock(item.getQuantity() > 0)
+                .availableQuantity(item.getQuantity())
+                .status(item.getStatus())
+                .build();
+    }
+
     public Boolean restockInventory(OrderRequest[] orderRequests) {
         for (OrderRequest orderRequest : orderRequests) {
             int remainingQuantity = orderRequest.getQuantity();
@@ -289,7 +320,7 @@ public class InventoryService {
             log.info("Initial Inventory: {}", inventory);
 
             // Add the new quantity
-            inventory.setQuantity(inventory.getQuantity() + quantity);
+            inventory.setQuantity(quantity);
             log.info("Updated Inventory: {}", inventory);
 
             // Determine status based on new quantity
