@@ -46,12 +46,13 @@ class InventoryServiceApplicationTests {
 
     private void addProduct(String skuCode) {
         RestAssured.given()
-                .queryParam("skuCode", skuCode)
+                .contentType("application/json")
+                .body(skuCode)
                 .when()
                 .post(INVENTORY_ENDPOINT + "/products")
                 .then()
                 .statusCode(200)
-                .body("skuCode", Matchers.equalTo(skuCode));
+                .body(Matchers.equalTo("true"));
     }
 
     @Test
@@ -96,6 +97,7 @@ class InventoryServiceApplicationTests {
     @Test
     void shouldRestockInventory() {
         Integer restockQuantity = 120;
+        addProduct(SKU_IPHONE_15);
 
         RestAssured.given()
                 .queryParam("skuCode", SKU_IPHONE_15)
@@ -188,7 +190,7 @@ class InventoryServiceApplicationTests {
     }
 
 
-
+    @Test
     void shouldReturnLowStockItems() {
         RestAssured.given()
                 .when()
