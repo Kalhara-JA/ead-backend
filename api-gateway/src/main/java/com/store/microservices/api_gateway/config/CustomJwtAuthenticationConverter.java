@@ -12,15 +12,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Custom JWT Authentication Converter to extract roles from JWT claims.
+ * Maps roles from the "resource_access" claim to GrantedAuthority objects.
+ */
 public class CustomJwtAuthenticationConverter extends JwtAuthenticationConverter {
 
     @Value("${spring.security.oauth2.authorizationserver.client.client-id}")
     private String clientId;
 
+    /**
+     * Constructor sets up the custom authority extraction logic.
+     */
     public CustomJwtAuthenticationConverter() {
         setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
     }
 
+    /**
+     * Extracts GrantedAuthority objects from JWT claims under "resource_access".
+     * Ensures roles specific to the client ID are converted to authorities.
+     *
+     * @param jwt the JWT containing claims
+     * @return a collection of GrantedAuthority objects
+     */
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
 

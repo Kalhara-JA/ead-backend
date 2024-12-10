@@ -1,6 +1,5 @@
 package com.store.microservices.inventory_service.service;
 
-
 import com.store.microservices.inventory_service.dto.InventoryRequest;
 import com.store.microservices.inventory_service.dto.InventoryResponse;
 import com.store.microservices.inventory_service.dto.OrderRequest;
@@ -12,11 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Service for managing inventory operations such as adding, deleting,
+ * checking stock, updating quantities, fulfilling orders, and restocking.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -25,16 +26,25 @@ public class InventoryService {
     private final InventoryRepository inventoryRepository;
     private static final int LOW_STOCK_THRESHOLD = 5;
 
-
+    /**
+     * Checks if a product with given SKU code has at least the specified quantity in stock.
+     *
+     * @param skuCode the SKU code of the product
+     * @param quantity the required quantity
+     * @return true if in stock, false otherwise
+     */
     public Boolean isInStock(String skuCode, int quantity) {
         return inventoryRepository.existsBySkuCodeAndQuantityIsGreaterThanEqual(skuCode, quantity);
     }
 
+    /**
+     * Adds a new product if it does not exist, or returns details of the existing product.
+     *
+     * @param skuCode the SKU code of the product
+     * @return the current inventory response for the product
+     */
     public InventoryResponse addProduct(String skuCode) {
-        // Check if the product already exists
         Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(skuCode);
-
-        // If the product already exists, return its current details
         if (existingItem.isPresent()) {
             Inventory item = existingItem.get();
             return InventoryResponse.builder()
@@ -45,7 +55,6 @@ public class InventoryService {
                     .build();
         }
 
-        // If the product doesn't exist, create a new inventory item
         Inventory item = new Inventory();
         item.setSkuCode(skuCode);
         item.setQuantity(0);
@@ -61,38 +70,49 @@ public class InventoryService {
                 .build();
     }
 
+    /**
+     * Deletes a product from the inventory by SKU code.
+     *
+     * @param skuCode the SKU code of the product
+     * @return true if deletion was successful, false otherwise
+     */
     @Transactional
     public Boolean deleteProduct(String skuCode) {
-        // Check if the product exists
         Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(skuCode);
-
-        // If the product doesn't exist, return false
         if (existingItem.isEmpty()) {
             log.warn("Attempted to delete non-existent product with SKU: {}", skuCode);
             return false;
         }
-
         try {
-            // Delete the product from the inventory
             inventoryRepository.deleteBySkuCode(skuCode);
             log.info("Product with SKU {} successfully deleted", skuCode);
             return true;
         } catch (Exception e) {
-            // Log any unexpected errors during deletion
             log.error("Error deleting product with SKU: {}", skuCode, e);
             return false;
         }
     }
 
+    /**
+     * Retrieves the entire inventory list.
+     *
+     * @return list of all inventory items
+     */
     @Transactional(readOnly = true)
     public List<Inventory> getAllInventory(){
         return inventoryRepository.findAll();
     }
 
+    /**
+     * Checks if a product is in stock with a specified quantity and returns a detailed response.
+     *
+     * @param skuCode the SKU code of the product
+     * @param quantity the required quantity
+     * @return InventoryResponse indicating stock availability and status
+     */
     @Transactional(readOnly = true)
     public InventoryResponse isInStock(String skuCode, Integer quantity){
         Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
-
         if(inventory.isEmpty()){
             return InventoryResponse.builder()
                     .skuCode(skuCode)
@@ -113,18 +133,30 @@ public class InventoryService {
                 .build();
     }
 
+    /**
+     * Retrieves the current quantity for a product.
+     *
+     * @param skuCode the SKU code of the product
+     * @return the current quantity, 0 if not found
+     */
     @Transactional(readOnly = true)
     public Integer getProductQuantity(String skuCode){
         Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
         return inventory.map(Inventory::getQuantity).orElse(0);
     }
 
+    /**
+     * Adds inventory for a product. If the product doesn't exist, creates it.
+     *
+     * @param request the InventoryRequest with SKU code and quantity
+     * @return InventoryResponse with updated product details
+     */
     @Transactional
     public InventoryResponse addInventory(InventoryRequest request){
         Optional<Inventory> existingItem = inventoryRepository.findBySkuCode(request.getSkuCode());
         Inventory item;
         if(existingItem.isPresent()){
-            item=existingItem.get();
+            item = existingItem.get();
             item.setQuantity(item.getQuantity()+request.getQuantity());
         }else{
             item = new Inventory();
@@ -134,7 +166,6 @@ public class InventoryService {
         }
 
         item.setStatus((determineStatus(item.getQuantity())));
-
         Inventory savedItem = inventoryRepository.save(item);
 
         return InventoryResponse.builder()
@@ -143,9 +174,15 @@ public class InventoryService {
                 .availableQuantity(savedItem.getQuantity())
                 .status(savedItem.getStatus())
                 .build();
-
     }
 
+    /**
+     * Reduces stock for a product by a given quantity.
+     *
+     * @param skuCode the SKU code of the product
+     * @param quantity the quantity to reduce
+     * @return InventoryResponse with updated product details
+     */
     @Transactional
     public InventoryResponse reduceStock(String skuCode,Integer quantity){
         Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
@@ -168,11 +205,22 @@ public class InventoryService {
                 .build();
     }
 
+    /**
+     * Retrieves a list of items that are low in stock.
+     *
+     * @return list of low stock items
+     */
     @Transactional(readOnly = true)
     public List<Inventory> getLowStockItems() {
         return inventoryRepository.findByQuantityLessThanEqual(LOW_STOCK_THRESHOLD);
     }
 
+    /**
+     * Determines the status of a product based on its quantity.
+     *
+     * @param quantity the product quantity
+     * @return the status of the product: "OUT_OF_STOCK", "LOW_STOCK", or "IN_STOCK"
+     */
     private String determineStatus(Integer quantity) {
         if(quantity == 0){
             return "OUT_OF_STOCK";
@@ -183,28 +231,30 @@ public class InventoryService {
         }
     }
 
+    /**
+     * Checks if an entire order can be fulfilled and reduces inventory accordingly.
+     *
+     * @param orderRequests array of OrderRequest representing products and their required quantities
+     * @return true if the entire order can be fulfilled, false otherwise
+     */
     @Transactional
     public Boolean orderIsInStock(OrderRequest[] orderRequests) {
         for (OrderRequest orderRequest : orderRequests) {
             int remainingQuantity = orderRequest.getQuantity();
-
-            // Get all inventory records for the given SKU, sorted by quantity descending
             List<Inventory> inventories = inventoryRepository.findBySkuCodeOrderByQuantityDesc(orderRequest.getSkuCode());
             if (inventories.isEmpty()) {
-                return false; // No stock available for this SKU
+                return false;
             }
 
             for (Inventory inventory : inventories) {
                 if (remainingQuantity <= 0) break;
 
                 if (inventory.getQuantity() >= remainingQuantity) {
-                    // Deduct the remaining quantity from this warehouse
                     inventory.setQuantity(inventory.getQuantity() - remainingQuantity);
                     inventory.setStatus(determineStatus(inventory.getQuantity()));
                     inventoryRepository.save(inventory);
                     remainingQuantity = 0;
                 } else {
-                    // Deduct all stock from this warehouse and move to the next one
                     remainingQuantity -= inventory.getQuantity();
                     inventory.setQuantity(0);
                     inventory.setStatus("Out of Stock");
@@ -213,12 +263,19 @@ public class InventoryService {
             }
 
             if (remainingQuantity > 0) {
-                return false; // Insufficient stock across all warehouses
+                return false;
             }
         }
-        return true; // Order successfully fulfilled
+        return true;
     }
 
+    /**
+     * Changes the warehouse location for a product.
+     *
+     * @param skuCode the SKU code of the product
+     * @param location the new location
+     * @return InventoryResponse with updated product details
+     */
     @Transactional
     public InventoryResponse changeWarehouse(String skuCode, String location) {
         Optional<Inventory> inventory = inventoryRepository.findBySkuCode(skuCode);
@@ -227,11 +284,8 @@ public class InventoryService {
         }
 
         Inventory item = inventory.get();
-
-        // Only update if the location is different
         if (!item.getLocation().equals(location)) {
             item.setLocation(location);
-            log.info(item.getLocation());
             Inventory updatedItem = inventoryRepository.save(item);
             return InventoryResponse.builder()
                     .skuCode(updatedItem.getSkuCode())
@@ -241,7 +295,6 @@ public class InventoryService {
                     .build();
         }
 
-        // If location is the same, return existing item details
         return InventoryResponse.builder()
                 .skuCode(item.getSkuCode())
                 .isInStock(item.getQuantity() > 0)
@@ -250,15 +303,18 @@ public class InventoryService {
                 .build();
     }
 
+    /**
+     * Restocks inventory for given SKUs and quantities, creating new inventory items if needed.
+     *
+     * @param orderRequests array of OrderRequest with SKUs and quantities to restock
+     * @return true after restocking is performed
+     */
     public Boolean restockInventory(OrderRequest[] orderRequests) {
         for (OrderRequest orderRequest : orderRequests) {
             int remainingQuantity = orderRequest.getQuantity();
             int MAX_WAREHOUSE_CAPACITY = 500;
-
-            // Get all inventory records for the given SKU, sorted by quantity descending
             List<Inventory> inventories = inventoryRepository.findBySkuCodeOrderByQuantityDesc(orderRequest.getSkuCode());
 
-            // If no inventory exists, create a new inventory item
             if (inventories.isEmpty()) {
                 Inventory newInventory = new Inventory();
                 newInventory.setSkuCode(orderRequest.getSkuCode());
@@ -268,22 +324,16 @@ public class InventoryService {
                 continue;
             }
 
-            // Distribute the restock quantity across existing inventories
             for (Inventory inventory : inventories) {
                 if (remainingQuantity <= 0) break;
-
-                // Add the remaining quantity to this inventory
                 int spaceAvailable = MAX_WAREHOUSE_CAPACITY - inventory.getQuantity();
                 int quantityToAdd = Math.min(remainingQuantity, spaceAvailable);
-
                 inventory.setQuantity(inventory.getQuantity() + quantityToAdd);
                 inventory.setStatus(determineStatus(inventory.getQuantity()));
                 inventoryRepository.save(inventory);
-
                 remainingQuantity -= quantityToAdd;
             }
 
-            // If there's still remaining quantity, create a new inventory item
             if (remainingQuantity > 0) {
                 Inventory newInventory = new Inventory();
                 newInventory.setSkuCode(orderRequest.getSkuCode());
@@ -292,12 +342,17 @@ public class InventoryService {
                 inventoryRepository.save(newInventory);
             }
         }
-
         return true;
     }
 
+    /**
+     * Updates the quantity of a given product.
+     *
+     * @param skuCode the SKU code of the product
+     * @param quantity the new quantity
+     * @return InventoryResponse with updated details or an error response if the update fails
+     */
     public InventoryResponse addQuantity(String skuCode, Integer quantity) {
-        // Validate SKU code and quantity
         if (skuCode == null || skuCode.trim().isEmpty()) {
             return createErrorResponse(skuCode, "INVALID_SKU_CODE");
         }
@@ -306,30 +361,20 @@ public class InventoryService {
         }
 
         try {
-            // Check if the product exists
             Optional<Inventory> inventoryOptional = inventoryRepository.findBySkuCode(skuCode);
             log.info("Inventory Optional: {}", inventoryOptional);
             if (inventoryOptional.isEmpty()) {
-                // Product not found, return an error response
                 log.warn("Product with SKU code {} not found in inventory.", skuCode);
                 return createErrorResponse(skuCode, "PRODUCT_NOT_AVAILABLE");
             }
 
-            // Product found, get the existing inventory
             Inventory inventory = inventoryOptional.get();
             log.info("Initial Inventory: {}", inventory);
-
-            // Add the new quantity
             inventory.setQuantity(quantity);
             log.info("Updated Inventory: {}", inventory);
-
-            // Determine status based on new quantity
             inventory.setStatus(determineStatus(inventory.getQuantity()));
-
-            // Save updated inventory
             Inventory updatedInventory = inventoryRepository.save(inventory);
 
-            // Build and return a success response
             return InventoryResponse.builder()
                     .skuCode(updatedInventory.getSkuCode())
                     .isInStock(updatedInventory.getQuantity() > 0)
@@ -346,9 +391,13 @@ public class InventoryService {
         }
     }
 
-
-    // Helper method to determine status based on quantity
-    // Helper method to create error response
+    /**
+     * Creates an error response for a given SKU code and error scenario.
+     *
+     * @param skuCode the SKU code of the product
+     * @param errorCode the error code
+     * @return InventoryResponse indicating an error
+     */
     private InventoryResponse createErrorResponse(String skuCode, String errorCode) {
         return InventoryResponse.builder()
                 .skuCode(skuCode)
@@ -357,6 +406,5 @@ public class InventoryService {
                 .status("ERROR")
                 .build();
     }
-    
 
 }

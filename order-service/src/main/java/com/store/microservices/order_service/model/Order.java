@@ -9,6 +9,10 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * Entity representing an order in the Order Service.
+ * Maps order data to the database.
+ */
 @Entity
 @Table(name = "t_orders")
 @Getter
@@ -19,16 +23,20 @@ public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private  Long id;
+    private Long id;
+
     private String orderNumber;
+
     private BigDecimal total;
+
     private String userEmail;
+
     private LocalDate orderDate;
+
     private String shippingAddress;
 
     private String paymentStatus;
 
     private String deliveryStatus;
-
 
 }

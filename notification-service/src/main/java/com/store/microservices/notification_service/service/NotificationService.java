@@ -11,6 +11,10 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service responsible for handling notification events related to order placement and cancellation.
+ * Listens to Kafka topics and sends email notifications to customers regarding their order status.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -18,6 +22,11 @@ public class NotificationService {
 
     private final JavaMailSender javaMailSender;
 
+    /**
+     * Listens for order placement events from the "order-placed" topic, and sends a confirmation email to the customer.
+     *
+     * @param orderPlacedEvent the event object containing order placement details
+     */
     @KafkaListener(topics = "order-placed")
     public void listen(OrderPlacedEvent orderPlacedEvent) {
         log.info("Got Message from order-placed topic {}", orderPlacedEvent);
@@ -46,6 +55,11 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Listens for order cancellation events from the "order-cancel" topic, and sends a cancellation confirmation email to the customer.
+     *
+     * @param orderCancelEvent the event object containing order cancellation details
+     */
     @KafkaListener(topics = "order-cancel")
     public void listen(OrderCancelEvent orderCancelEvent) {
         log.info("Got Message from order-cancel topic {}", orderCancelEvent);

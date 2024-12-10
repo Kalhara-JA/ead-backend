@@ -10,6 +10,10 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
 
+/**
+ * Entity representing a product in the Product Service.
+ * Stored in a MongoDB collection named "product".
+ */
 @Document(value = "product")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,14 +22,14 @@ import java.math.BigDecimal;
 public class Product {
 
     @Id
-    private String id;
+    private String id;            // Unique identifier for the product
     @Indexed(unique = true)
-    private String skuCode;
-    private String category;
-    private String brand;
-    private String name;
-    private String image;
-    private String description;
-    private BigDecimal price;
-    private String updatedAt;
+    private String skuCode;       // Unique SKU code for the product
+    private String category;      // Category of the product
+    private String brand;         // Brand of the product
+    private String name;          // Name of the product
+    private String image;         // Image URL or path for the product
+    private String description;   // Description of the product
+    private BigDecimal price;     // Price of the product
+    private String updatedAt;     // Last updated timestamp
 }

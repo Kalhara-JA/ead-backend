@@ -5,13 +5,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Data Transfer Object (DTO) for inventory-related requests.
+ * Encapsulates the details required to perform operations on inventory.
+ */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class InventoryRequest {
-    private String skuCode;
-    private Integer quantity;
-    private String location;
+    private String skuCode; // SKU code of the inventory item
+    private Integer quantity; // Quantity of the inventory item
+    private String location; // Location of the inventory item
 }
-

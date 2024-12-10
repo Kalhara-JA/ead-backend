@@ -12,7 +12,7 @@ public static void stubInventoryCall(String skuCode) {
 }
 
     public static void stubInventoryQuantityCall() {
-        stubFor(get(urlEqualTo("/api/v1/inventory/all"))
+        stubFor(get(urlEqualTo("/api/v1/inventory"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")

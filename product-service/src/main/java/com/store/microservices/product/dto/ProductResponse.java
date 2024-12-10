@@ -3,9 +3,9 @@ package com.store.microservices.product.dto;
 import java.math.BigDecimal;
 
 /**
- * DTO for creating or updating a product in the Product Service.
+ * DTO for responding with product details in the Product Service.
  */
-public record ProductRequest(
+public record ProductResponse(
         String id,           // Unique identifier for the product
         String name,         // Name of the product
         String skuCode,      // SKU code for the product

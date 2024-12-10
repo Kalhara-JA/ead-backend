@@ -6,7 +6,6 @@ import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
@@ -16,9 +15,14 @@ import java.net.URI;
 import static org.springframework.cloud.gateway.server.mvc.filter.FilterFunctions.setPath;
 import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
 
+/**
+ * Configuration class defining routes for API Gateway.
+ * Routes incoming requests to appropriate microservices and handles fallback logic for circuit breakers.
+ */
 @Configuration
 public class Routes {
 
+    // URLs for microservices are injected from application properties
     @Value("${product.service.url}")
     private String productServiceUrl;
 
@@ -28,6 +32,10 @@ public class Routes {
     @Value("${inventory.service.url}")
     private String inventoryServiceUrl;
 
+    /**
+     * Configures routes for Product Service.
+     * Includes a circuit breaker for handling service unavailability.
+     */
     @Bean
     public RouterFunction<ServerResponse> productServiceRoute() {
         return route("product_service")
@@ -36,6 +44,10 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures routes for Product Service Swagger API documentation.
+     * Includes path rewriting and circuit breaker functionality.
+     */
     @Bean
     public RouterFunction<ServerResponse> productServiceSwaggerRoute() {
         return route("product_service_swagger/**")
@@ -45,6 +57,10 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures routes for Order Service.
+     * Includes a circuit breaker for handling service unavailability.
+     */
     @Bean
     public RouterFunction<ServerResponse> orderServiceRoute() {
         return route("order_service")
@@ -53,6 +69,10 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures routes for Order Service Swagger API documentation.
+     * Includes path rewriting and circuit breaker functionality.
+     */
     @Bean
     public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
         return route("order_service_swagger")
@@ -62,6 +82,10 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures routes for Inventory Service.
+     * Includes a circuit breaker for handling service unavailability.
+     */
     @Bean
     public RouterFunction<ServerResponse> inventoryService() {
         return route("inventory_service")
@@ -70,6 +94,10 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures routes for Inventory Service Swagger API documentation.
+     * Includes path rewriting and circuit breaker functionality.
+     */
     @Bean
     public RouterFunction<ServerResponse> inventoryServiceSwaggerRoute() {
         return route("inventory_service_swagger")
@@ -79,21 +107,15 @@ public class Routes {
                 .build();
     }
 
+    /**
+     * Configures a fallback route to handle requests when services are unavailable.
+     * Responds with a 503 Service Unavailable status.
+     */
     @Bean
     public RouterFunction<ServerResponse> fallbackRoute() {
         return route("fallbackRoute")
                 .GET("/fallbackRoute", request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE).body("Service is not available"))
                 .build();
     }
-
-
-    @Bean
-    public RouterFunction<ServerResponse> warehouseServiceRoute() {
-        return route("warehouse_service")
-                .route(RequestPredicates.path("/api/v1/inventory/warehouse/**"), HandlerFunctions.http("http://localhost:8082"))
-                .filter(CircuitBreakerFilterFunctions.circuitBreaker("warehouseServiceCircuitBreaker", URI.create("forward:/fallbackRoute")))
-                .build();
-    }
-
 
 }

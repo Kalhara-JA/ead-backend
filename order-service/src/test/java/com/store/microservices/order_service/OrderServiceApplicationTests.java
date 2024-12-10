@@ -22,7 +22,7 @@ class OrderServiceApplicationTests {
 	@LocalServerPort
 	private Integer port;
 
-	static MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.0.3");
+	static MySQLContainer<?> mySQLContainer = new MySQLContainer<>("mysql:8.3.0");
 
 	static {
 		mySQLContainer.start();

@@ -7,9 +7,17 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration for OpenAPI documentation for the Product Service.
+ */
 @Configuration
 public class OpenAPIConfig {
 
+    /**
+     * Configures the OpenAPI specification for the Product Service API.
+     *
+     * @return an OpenAPI instance with the specified metadata and documentation links
+     */
     @Bean
     public OpenAPI productServiceAPI() {
         return new OpenAPI()
@@ -21,6 +29,5 @@ public class OpenAPIConfig {
                 .externalDocs(new ExternalDocumentation()
                         .description("Product Service Wiki Documentation")
                         .url("https://product-service-dummy-url.com/docs"));
-
     }
 }
