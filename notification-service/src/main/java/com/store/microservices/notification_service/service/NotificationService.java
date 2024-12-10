@@ -12,8 +12,8 @@ import org.springframework.mail.javamail.MimeMessagePreparator;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for handling notification events and sending email notifications.
- * Listens to Kafka topics for order-related events and sends appropriate emails.
+ * Service responsible for handling notification events related to order placement and cancellation.
+ * Listens to Kafka topics and sends email notifications to customers regarding their order status.
  */
 @Service
 @RequiredArgsConstructor
@@ -23,58 +23,56 @@ public class NotificationService {
     private final JavaMailSender javaMailSender;
 
     /**
-     * Listener for the "order-placed" Kafka topic.
-     * Sends an email notification when an order is placed.
+     * Listens for order placement events from the "order-placed" topic, and sends a confirmation email to the customer.
      *
-     * @param orderPlacedEvent the event containing order placement details
+     * @param orderPlacedEvent the event object containing order placement details
      */
     @KafkaListener(topics = "order-placed")
     public void listen(OrderPlacedEvent orderPlacedEvent) {
-        log.info("Received message from order-placed topic: {}", orderPlacedEvent);
+        log.info("Got Message from order-placed topic {}", orderPlacedEvent);
         MimeMessagePreparator mimeMessagePreparator = mimeMessage -> {
             MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
             messageHelper.setFrom("springshop@gmail.com");
-            messageHelper.setTo(orderPlacedEvent.getEmail());
-            messageHelper.setSubject("Order Confirmation - Order Number " + orderPlacedEvent.getOrderNumber());
+            messageHelper.setTo(orderPlacedEvent.getEmail().toString());
+            messageHelper.setSubject("Your Order with Order Number " + orderPlacedEvent.getOrderNumber() + " has been placed successfully");
             messageHelper.setText(String.format("""
                     <html>
                         <body>
                             <h3>Dear %s %s, </h3>
-                            <p>Your order with Order Number %s has been placed successfully.</p>
-                            <p>Thank you for shopping with us!</p>
+                            <p>Your Order with Order Number %s has been placed successfully</p>
+                            <p>Thank you for shopping with us</p>
                         </body>
                     </html>
-                    """, orderPlacedEvent.getFirstName(), orderPlacedEvent.getLastName(), orderPlacedEvent.getOrderNumber()), true);
+                    """, orderPlacedEvent.getFirstName().toString(), orderPlacedEvent.getLastName().toString(), orderPlacedEvent.getOrderNumber()), true);
         };
 
         try {
             javaMailSender.send(mimeMessagePreparator);
-            log.info("Order placement notification email sent successfully.");
+            log.info("Order Notification Email Sent Successfully");
         } catch (MailException e) {
-            log.error("Error while sending email for order placement", e);
-            throw new RuntimeException("Error sending email to " + orderPlacedEvent.getEmail());
+            log.error("Error while sending email", e);
+            throw new RuntimeException("Error while sending email to " + orderPlacedEvent.getEmail());
         }
     }
 
     /**
-     * Listener for the "order-cancel" Kafka topic.
-     * Sends an email notification when an order is canceled.
+     * Listens for order cancellation events from the "order-cancel" topic, and sends a cancellation confirmation email to the customer.
      *
-     * @param orderCancelEvent the event containing order cancellation details
+     * @param orderCancelEvent the event object containing order cancellation details
      */
     @KafkaListener(topics = "order-cancel")
     public void listen(OrderCancelEvent orderCancelEvent) {
-        log.info("Received message from order-cancel topic: {}", orderCancelEvent);
+        log.info("Got Message from order-cancel topic {}", orderCancelEvent);
         MimeMessagePreparator mimeMessagePreparator = mimeMessage -> {
             MimeMessageHelper messageHelper = new MimeMessageHelper(mimeMessage);
             messageHelper.setFrom("springshop@gmail.com");
-            messageHelper.setTo(orderCancelEvent.getEmail());
-            messageHelper.setSubject("Order Cancellation - Order Number " + orderCancelEvent.getOrderNumber());
+            messageHelper.setTo(orderCancelEvent.getEmail().toString());
+            messageHelper.setSubject("Your Order with Order Number " + orderCancelEvent.getOrderNumber() + " has been cancel successfully");
             messageHelper.setText(String.format("""
                     <html>
                         <body>
-                            <p>Your order with Order Number %s has been canceled successfully.</p>
-                            <p>We hope to serve you again soon!</p>
+                            <p>Your Order with Order Number %s has been cancel successfully</p>
+                            <p>Thank you for shopping with us</p>
                         </body>
                     </html>
                     """, orderCancelEvent.getOrderNumber()), true);
@@ -82,10 +80,10 @@ public class NotificationService {
 
         try {
             javaMailSender.send(mimeMessagePreparator);
-            log.info("Order cancellation notification email sent successfully.");
+            log.info("Order Notification Email Sent Successfully");
         } catch (MailException e) {
-            log.error("Error while sending email for order cancellation", e);
-            throw new RuntimeException("Error sending email to " + orderCancelEvent.getEmail());
+            log.error("Error while sending email", e);
+            throw new RuntimeException("Error while sending email to " + orderCancelEvent.getEmail());
         }
     }
 }

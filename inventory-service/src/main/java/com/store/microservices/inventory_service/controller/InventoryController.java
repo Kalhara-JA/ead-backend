@@ -5,16 +5,15 @@ import com.store.microservices.inventory_service.dto.OrderRequest;
 import com.store.microservices.inventory_service.model.Inventory;
 import com.store.microservices.inventory_service.service.InventoryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * REST controller for managing inventory operations.
- * Provides endpoints for CRUD operations, stock checks, and inventory adjustments.
+ * REST controller for managing inventory-related operations, including adding and removing products,
+ * checking stock availability, adjusting quantities, and handling warehouse changes.
  */
 @Slf4j
 @RestController
@@ -25,10 +24,10 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     /**
-     * Adds a new product to the inventory.
+     * Adds a product to the inventory or returns existing product details if it already exists.
      *
-     * @param skuCode the SKU code of the product
-     * @return true if the product is successfully added
+     * @param skuCode the SKU code of the product to add
+     * @return true if the product was added or retrieved successfully
      */
     @PostMapping("/products")
     @ResponseStatus(HttpStatus.OK)
@@ -40,10 +39,10 @@ public class InventoryController {
     }
 
     /**
-     * Deletes a product from the inventory.
+     * Deletes a product from the inventory by its SKU code.
      *
-     * @param skuCode the SKU code of the product
-     * @return true if the product is successfully deleted
+     * @param skuCode the SKU code of the product to delete
+     * @return true if deletion was successful
      */
     @DeleteMapping("/products")
     @ResponseStatus(HttpStatus.OK)
@@ -55,9 +54,9 @@ public class InventoryController {
     }
 
     /**
-     * Fetches all inventory items.
+     * Retrieves the entire inventory list.
      *
-     * @return list of all inventory items
+     * @return a list of all inventory items
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -69,11 +68,11 @@ public class InventoryController {
     }
 
     /**
-     * Checks stock availability for a product.
+     * Checks if a product with given SKU code is in stock with at least the specified quantity.
      *
-     * @param skuCode  the SKU code of the product
+     * @param skuCode the SKU code of the product
      * @param quantity the required quantity
-     * @return stock availability response
+     * @return an InventoryResponse indicating stock availability and status
      */
     @GetMapping("/checkStock")
     @ResponseStatus(HttpStatus.OK)
@@ -85,10 +84,10 @@ public class InventoryController {
     }
 
     /**
-     * Fetches the quantity of a specific product.
+     * Retrieves the current quantity available for a product.
      *
      * @param skuCode the SKU code of the product
-     * @return the quantity of the product
+     * @return the available quantity
      */
     @GetMapping("/getProductQuantity/{skuCode}")
     @ResponseStatus(HttpStatus.OK)
@@ -100,11 +99,25 @@ public class InventoryController {
     }
 
     /**
-     * Deducts stock for a product.
+     * Retrieves the entire inventory list (duplicate endpoint for testing or compatibility).
      *
-     * @param skuCode  the SKU code of the product
+     * @return a list of all inventory items
+     */
+    @GetMapping("/all")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Inventory> getAllInventory() {
+        log.info("Fetching all inventory items");
+        List<Inventory> inventoryList = inventoryService.getAllInventory();
+        log.info("Fetched {} inventory items", inventoryList.size());
+        return inventoryList;
+    }
+
+    /**
+     * Deducts a specified quantity from the stock of a given product.
+     *
+     * @param skuCode the SKU code of the product
      * @param quantity the quantity to deduct
-     * @return stock deduction response
+     * @return an InventoryResponse with updated stock details
      */
     @PostMapping("/deduct")
     @ResponseStatus(HttpStatus.OK)
@@ -124,10 +137,10 @@ public class InventoryController {
     }
 
     /**
-     * Checks stock and processes an order if items are in stock.
+     * Checks if an entire order can be fulfilled and updates the stock accordingly.
      *
-     * @param orderRequests list of order requests
-     * @return true if all items are in stock
+     * @param orderRequests a list of OrderRequest objects representing the order
+     * @return true if the entire order can be fulfilled, false otherwise
      */
     @PostMapping("/check-stock")
     @ResponseStatus(HttpStatus.OK)
@@ -142,9 +155,9 @@ public class InventoryController {
     }
 
     /**
-     * Fetches items with low stock levels.
+     * Retrieves a list of items that are currently low in stock.
      *
-     * @return list of low-stock items
+     * @return a list of low-stock items
      */
     @GetMapping("/low-stock")
     @ResponseStatus(HttpStatus.OK)
@@ -156,11 +169,11 @@ public class InventoryController {
     }
 
     /**
-     * Restocks inventory for a specific product.
+     * Restocks the inventory for a given SKU code by setting its new quantity.
      *
-     * @param skuCode  the SKU code of the product
-     * @param quantity the quantity to restock
-     * @return restock response
+     * @param skuCode the SKU code of the product
+     * @param quantity the new quantity to set
+     * @return an InventoryResponse with updated product details
      */
     @PostMapping("/restock")
     @ResponseStatus(HttpStatus.OK)
@@ -172,10 +185,10 @@ public class InventoryController {
     }
 
     /**
-     * Adjusts inventory based on processed orders.
+     * Increments the stock for given SKUs after processing an order by distributing additional quantities.
      *
-     * @param orderRequests list of processed order requests
-     * @return true if inventory is successfully adjusted
+     * @param orderRequests a list of OrderRequest objects with SKUs and quantities to add
+     * @return true if restocking is successful
      */
     @PostMapping("/increment-stock")
     public Boolean restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
@@ -189,11 +202,11 @@ public class InventoryController {
     }
 
     /**
-     * Changes the warehouse location for a product.
+     * Changes the warehouse location for a given product.
      *
-     * @param skuCode  the SKU code of the product
-     * @param location the new warehouse location
-     * @return warehouse change response
+     * @param skuCode the SKU code of the product
+     * @param location the new location to set
+     * @return an InventoryResponse with updated product details
      */
     @PostMapping("/change-warehouse")
     @ResponseStatus(HttpStatus.OK)

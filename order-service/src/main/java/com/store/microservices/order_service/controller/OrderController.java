@@ -14,8 +14,9 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Controller for handling order-related operations.
- * Provides endpoints to place, retrieve, and manage orders.
+ * REST controller responsible for handling order-related operations such as placing orders,
+ * retrieving orders, updating order status (payment, cancel, ship, deliver),
+ * and fetching orders by user.
  */
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -25,30 +26,31 @@ public class OrderController {
     private final OrderService orderService;
 
     /**
-     * Places a new order.
+     * Places a new order based on the provided OrderRequest.
      *
-     * @param orderRequest the details of the order
-     * @return the response with order placement details or an error message
+     * @param orderRequest the order request containing product and user details
+     * @return ResponseEntity containing OrderPlaceResponse with order details if successful, or an error response otherwise
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<OrderPlaceResponse> placeOrder(@RequestBody OrderRequest orderRequest) {
+        OrderPlaceResponse orderPlaceResponse;
         try {
-            OrderPlaceResponse orderPlaceResponse = orderService.placeOrder(orderRequest);
+            orderPlaceResponse = orderService.placeOrder(orderRequest);
             return ResponseEntity.status(HttpStatus.CREATED).body(orderPlaceResponse);
         } catch (UserException ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new OrderPlaceResponse(null, null, BigDecimal.ZERO, ex.getMessage()));
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
         } catch (Exception ex) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new OrderPlaceResponse(null, null, BigDecimal.ZERO, "Order Place failed"));
+            orderPlaceResponse = new OrderPlaceResponse(null, null, BigDecimal.ZERO, "Order Place failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(orderPlaceResponse);
         }
     }
 
     /**
      * Retrieves all orders.
      *
-     * @return a list of all orders
+     * @return a list of OrderResponse objects representing all orders
      */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -57,10 +59,10 @@ public class OrderController {
     }
 
     /**
-     * Retrieves an order by its order number.
+     * Retrieves a specific order by its order number.
      *
-     * @param orderNumber the order number
-     * @return the details of the order
+     * @param orderNumber the unique order number
+     * @return an OrderResponse object representing the requested order
      */
     @GetMapping("{orderNumber}")
     @ResponseStatus(HttpStatus.OK)
@@ -69,10 +71,10 @@ public class OrderController {
     }
 
     /**
-     * Retrieves orders for a specific user by their email.
+     * Retrieves all orders associated with a specific user's email.
      *
      * @param email the email of the user
-     * @return a list of orders placed by the user
+     * @return a list of OrderResponse objects for that user
      */
     @GetMapping("user/{email}/orders")
     @ResponseStatus(HttpStatus.OK)
@@ -81,10 +83,10 @@ public class OrderController {
     }
 
     /**
-     * Updates the status of an order to "Paid".
+     * Updates the order status to "Paid" for a given order ID.
      *
-     * @param id the ID of the order
-     * @return a response indicating success or failure
+     * @param id the ID of the order to update
+     * @return ResponseEntity containing a success message if successful, or an error message otherwise
      */
     @PutMapping("{id}/payment")
     @ResponseStatus(HttpStatus.OK)
@@ -99,10 +101,10 @@ public class OrderController {
     }
 
     /**
-     * Cancels an order.
+     * Cancels the specified order.
      *
-     * @param id the ID of the order
-     * @return a response indicating success or failure
+     * @param id the ID of the order to cancel
+     * @return ResponseEntity containing a success message if successful, or an error message otherwise
      */
     @PutMapping("{id}/cancel")
     @ResponseStatus(HttpStatus.OK)
@@ -111,16 +113,16 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.OK).body(orderService.cancelOrder(id));
         } catch (UserException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (Exception ex){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Cancel order failed..");
         }
     }
 
     /**
-     * Updates the status of an order to "Shipped".
+     * Marks the specified order as shipped.
      *
-     * @param id the ID of the order
-     * @return a response indicating success or failure
+     * @param id the ID of the order to ship
+     * @return ResponseEntity containing a success message if successful, or an error message otherwise
      */
     @PutMapping("{id}/ship")
     @ResponseStatus(HttpStatus.OK)
@@ -129,16 +131,16 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.OK).body(orderService.shipOrder(id));
         } catch (UserException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (Exception ex){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to ship order");
         }
     }
 
     /**
-     * Updates the status of an order to "Delivered".
+     * Marks the specified order as delivered.
      *
-     * @param id the ID of the order
-     * @return a response indicating success or failure
+     * @param id the ID of the order to deliver
+     * @return ResponseEntity containing a success message if successful, or an error message otherwise
      */
     @PutMapping("{id}/deliver")
     @ResponseStatus(HttpStatus.OK)
@@ -147,8 +149,9 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.OK).body(orderService.deliverOrder(id));
         } catch (UserException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (Exception ex){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to deliver order");
         }
     }
+
 }
