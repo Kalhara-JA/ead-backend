@@ -18,47 +18,60 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Security configuration for the API Gateway.
+ * Implements JWT-based OAuth2 resource server security and custom CORS configuration.
+ */
 @Configuration
 public class SecurityConfig {
 
+    // URI for the JSON Web Key Set (JWKS) used for JWT verification
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    /**
+     * Defines the security filter chain.
+     * - Configures route-specific access rules.
+     * - Enables CORS and OAuth2 JWT authentication.
+     *
+     * @param httpSecurity the HttpSecurity instance
+     * @return the configured SecurityFilterChain
+     * @throws Exception if any configuration error occurs
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity.authorizeHttpRequests(authorize -> {
-                    // Permit all requests for free resources
+                    // Permit access to public/free resources
                     authorize.requestMatchers(SecurityRouteConfig.FREE_RESOURCE_URLS).permitAll();
 
-                    // Allow specific HTTP methods for partially secured routes
+                    // Configure partially secured routes
                     SecurityRouteConfig.PARTIALLY_SECURED_ROUTES.forEach((route, methods) -> {
                         for (HttpMethod method : methods) {
                             authorize.requestMatchers(method, route).permitAll();
                         }
                     });
 
-                    // Secure GET routes
+                    // Configure secured GET routes
                     for (Map.Entry<String, String[]> entry : SecurityRouteConfig.SECURED_GET_ROUTES.entrySet()) {
                         authorize.requestMatchers(HttpMethod.GET, entry.getKey()).hasAnyAuthority(entry.getValue());
                     }
 
-                    // Secure POST routes
+                    // Configure secured POST routes
                     for (Map.Entry<String, String[]> entry : SecurityRouteConfig.SECURED_POST_ROUTES.entrySet()) {
                         authorize.requestMatchers(HttpMethod.POST, entry.getKey()).hasAnyAuthority(entry.getValue());
                     }
 
-                    // Secure PUT routes
+                    // Configure secured PUT routes
                     for (Map.Entry<String, String[]> entry : SecurityRouteConfig.SECURED_PUT_ROUTES.entrySet()) {
                         authorize.requestMatchers(HttpMethod.PUT, entry.getKey()).hasAnyAuthority(entry.getValue());
                     }
 
-
-                    // Secure DELETE routes
+                    // Configure secured DELETE routes
                     for (Map.Entry<String, String[]> entry : SecurityRouteConfig.SECURED_DELETE_ROUTES.entrySet()) {
                         authorize.requestMatchers(HttpMethod.DELETE, entry.getKey()).hasAnyAuthority(entry.getValue());
                     }
 
-                    // All other requests require authentication
+                    // Deny all other requests
                     authorize.anyRequest().denyAll();
                 })
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -66,11 +79,21 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * Custom JWT authentication converter to map JWT claims to granted authorities.
+     *
+     * @return the configured JwtAuthenticationConverter
+     */
     @Bean
     public JwtAuthenticationConverter customJwtAuthenticationConverter() {
         return new CustomJwtAuthenticationConverter();
     }
 
+    /**
+     * Configures a JWT decoder with a custom validator for issuer verification.
+     *
+     * @return the configured JwtDecoder
+     */
     @Bean
     public JwtDecoder jwtDecoder() {
         List<String> validIssuers = List.of(
@@ -81,7 +104,7 @@ public class SecurityConfig {
 
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
 
-        // Add custom validation for issuer
+        // Custom validation for the issuer
         jwtDecoder.setJwtValidator((jwt) -> {
             String issuer = jwt.getIssuer().toString();
             if (validIssuers.contains(issuer)) {
@@ -93,15 +116,20 @@ public class SecurityConfig {
         return jwtDecoder;
     }
 
+    /**
+     * Configures CORS to allow requests from all origins with specific methods and headers.
+     *
+     * @return the configured CorsConfigurationSource
+     */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("*")); // Allow all origins
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")); // Allowed HTTP methods
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD")); // Allow common HTTP methods
         configuration.setAllowedHeaders(List.of("*")); // Allow all headers
-        configuration.setAllowCredentials(false); // Set to false if no credentials are needed
+        configuration.setAllowCredentials(false); // Credentials not required
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Apply configuration to all endpoints
+        source.registerCorsConfiguration("/**", configuration); // Apply CORS rules to all endpoints
         return source;
     }
 }

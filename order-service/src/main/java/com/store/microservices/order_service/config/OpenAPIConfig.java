@@ -7,6 +7,9 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration for OpenAPI documentation for the Order Service.
+ */
 @Configuration
 public class OpenAPIConfig {
 
@@ -21,6 +24,5 @@ public class OpenAPIConfig {
                 .externalDocs(new ExternalDocumentation()
                         .description("Order Service Wiki Documentation")
                         .url("https://order-service-dummy-url.com/docs"));
-
     }
 }

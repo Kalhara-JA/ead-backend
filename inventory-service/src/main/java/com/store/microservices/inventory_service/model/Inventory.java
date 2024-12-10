@@ -7,13 +7,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Entity representing the Inventory model.
+ * Maps inventory data to the database and establishes a relationship with the Warehouse entity.
+ */
 @Entity
-@Table(name="t_inventory",uniqueConstraints = @UniqueConstraint(columnNames = "skuCode"))
+@Table(name = "t_inventory", uniqueConstraints = @UniqueConstraint(columnNames = "skuCode"))
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class Inventory {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,6 +33,4 @@ public class Inventory {
     @JoinColumn(name = "warehouse_id")
     @JsonBackReference
     private Warehouse warehouse;
-
-
 }

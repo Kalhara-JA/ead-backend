@@ -1,6 +1,5 @@
 package com.store.microservices.order_service.service;
 
-
 import com.store.microservices.order_service.client.InventoryClient;
 import com.store.microservices.order_service.dto.*;
 import com.store.microservices.order_service.event.OrderCancelEvent;
@@ -11,8 +10,6 @@ import com.store.microservices.order_service.repository.OrderItemRepository;
 import com.store.microservices.order_service.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.bcel.ExceptionRange;
-import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Service class responsible for managing order operations.
+ * Handles order placement, retrieval, updates, and events like cancellations and shipments.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,102 +32,96 @@ public class OrderService {
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplatePlace;
     private final KafkaTemplate<String, OrderCancelEvent> kafkaTemplateCancel;
 
+    /**
+     * Places a new order.
+     *
+     * @param orderRequest the order request containing order details
+     * @return the response with details of the placed order
+     * @throws UserException if items are out of stock or another issue occurs
+     */
     @Transactional
     public OrderPlaceResponse placeOrder(OrderRequest orderRequest) {
         try {
-            //Map OrderRequest items to InventoryRequest DTOs
-        List<InventoryRequest> inventoryItems = orderRequest.items().stream()
-                .map(item -> {
-                    return new InventoryRequest(item.skuCode(), item.quantity());
-                }).toList();
+            List<InventoryRequest> inventoryItems = orderRequest.items().stream()
+                    .map(item -> new InventoryRequest(item.skuCode(), item.quantity()))
+                    .toList();
 
-        //Decrement Inventory
-        InventoryResponse inventoryResponse = inventoryClient.decrementStock(inventoryItems);
+            InventoryResponse inventoryResponse = inventoryClient.decrementStock(inventoryItems);
 
+            if (inventoryResponse.isInStock()) {
+                Order order = new Order();
+                order.setOrderNumber(UUID.randomUUID().toString());
+                order.setOrderDate(orderRequest.date());
+                order.setUserEmail(orderRequest.userDetails().email());
+                order.setDeliveryStatus("PENDING");
+                order.setShippingAddress(orderRequest.shippingAddress());
+                order.setTotal(orderRequest.total());
+                order.setPaymentStatus("UNPAID");
 
-        // Check if all items are in stock
-        if (inventoryResponse.isInStock()) {
-            Order order = new Order();
-            order.setOrderNumber(UUID.randomUUID().toString());
-            order.setOrderDate(orderRequest.date());
-            order.setUserEmail(orderRequest.userDetails().email());
-            order.setDeliveryStatus("PENDING");
-            order.setShippingAddress(orderRequest.shippingAddress());
-            order.setTotal(orderRequest.total());
-            order.setPaymentStatus("UNPAID");
+                List<OrderItem> orderItems = orderRequest.items().stream()
+                        .map(item -> {
+                            OrderItem orderItem = new OrderItem();
+                            orderItem.setSkuCode(item.skuCode());
+                            orderItem.setQuantity(item.quantity());
+                            orderItem.setOrder(order);
+                            return orderItem;
+                        }).toList();
 
-            //Map OrderRequest items to OrderItem entities and associate them with the order
-            List<OrderItem> orderItems = orderRequest.items().stream()
-                    .map(item -> {
-                        OrderItem orderItem = new OrderItem();
-                        orderItem.setSkuCode(item.skuCode());
-                        orderItem.setQuantity(item.quantity());
-                        orderItem.setOrder(order);
-                        return orderItem;
-                    }).toList();
+                orderRepository.save(order);
+                orderItemRepository.saveAll(orderItems);
 
-            // Save Order and OrderItems
-            orderRepository.save(order);
-            orderItemRepository.saveAll(orderItems);
-            OrderPlaceResponse orderPlaceResponse = new OrderPlaceResponse(order.getId(),order.getOrderNumber(),order.getTotal(),"");
+                OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(),
+                        orderRequest.userDetails().email(),
+                        orderRequest.userDetails().firstName(),
+                        orderRequest.userDetails().lastName());
 
-            //Send OrderPlacedEvent
-            try {
-                OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(order.getOrderNumber(), orderRequest.userDetails().email(), orderRequest.userDetails().firstName(), orderRequest.userDetails().lastName());
-                log.info("Staring to send OrderPlacedEvent {}", orderPlacedEvent);
                 kafkaTemplatePlace.send("order-placed", orderPlacedEvent);
-                log.info("Ending to send OrderPlacedEvent {}", orderPlacedEvent);
-            }catch (Exception ex){
 
+                return new OrderPlaceResponse(order.getId(), order.getOrderNumber(), order.getTotal(), "");
+            } else {
+                throw new UserException("Out of Stock");
             }
-            return orderPlaceResponse;
-        }
-        else {
-            //Throw an exception if any item is out of stock
-            throw new UserException("Out of Stock");
-        }
-        }catch (Exception ex){
-            //Throw an exception if any error occurs
+        } catch (Exception ex) {
             throw ex;
         }
-
     }
 
+    /**
+     * Retrieves all orders along with their items.
+     *
+     * @return a list of all orders
+     */
     public List<OrderResponse> getAllOrders() {
-
-        // Fetch all Orders and OrderItems from the database
         List<Order> orders = orderRepository.findAll();
         List<OrderItem> orderItems = orderItemRepository.findAll();
 
         return orders.stream()
-                .map(order -> {
-                    // Map to OrderResponse DTO
-                    return new OrderResponse(
-                            order.getId(),
-                            order.getOrderNumber(),
-                            orderItems.stream()
-                                    .filter(item -> item.getOrder() == order)
-                                    .map(item -> new OrderResponse.OrderItem(item.getSkuCode(), item.getQuantity()))
-                                    .toList(),
-                            order.getTotal(),
-                            order.getOrderDate(),
-                            order.getShippingAddress(),
-                            order.getPaymentStatus(),
-                            order.getDeliveryStatus(),
-                            order.getUserEmail()
-                    );
-                })
+                .map(order -> new OrderResponse(
+                        order.getId(),
+                        order.getOrderNumber(),
+                        orderItems.stream()
+                                .filter(item -> item.getOrder().equals(order))
+                                .map(item -> new OrderResponse.OrderItem(item.getSkuCode(), item.getQuantity()))
+                                .toList(),
+                        order.getTotal(),
+                        order.getOrderDate(),
+                        order.getShippingAddress(),
+                        order.getPaymentStatus(),
+                        order.getDeliveryStatus(),
+                        order.getUserEmail()))
                 .toList();
-
     }
 
-    public  OrderResponse getOrderByOrderNumber(String orderNumber) {
-
+    /**
+     * Retrieves an order by its order number.
+     *
+     * @param orderNumber the unique order number
+     * @return the details of the specified order
+     */
+    public OrderResponse getOrderByOrderNumber(String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
                 .map(order -> {
                     List<OrderItem> orderItems = orderItemRepository.findAllByOrder(order);
-
-                    // Map to OrderResponse DTO
                     return new OrderResponse(
                             order.getId(),
                             order.getOrderNumber(),
@@ -138,161 +133,104 @@ public class OrderService {
                             order.getShippingAddress(),
                             order.getPaymentStatus(),
                             order.getDeliveryStatus(),
-                            order.getUserEmail()
-                    );
+                            order.getUserEmail());
                 })
                 .orElseThrow(() -> new UserException("Order not found"));
     }
 
-    public  List<OrderResponse> getOrderByUser(String email) {
-        // Fetch all Orders and OrderItems from the database
-        List<Order> orders = orderRepository.findAllByUserEmail(email);
-        List<OrderItem> orderItems = orderItemRepository.findAll();
-
-        // Map orders to OrderResponse
-        return orders.stream()
-                .map(order -> {
-                    return new OrderResponse(
-                            order.getId(),
-                            order.getOrderNumber(),
-                            orderItems.stream()
-                                    .filter(item->item.getOrder()==order)
-                                    .map(item -> new OrderResponse.OrderItem(item.getSkuCode(), item.getQuantity()))
-                                    .toList(),
-                            order.getTotal(),
-                            order.getOrderDate(),
-                            order.getShippingAddress(),
-                            order.getPaymentStatus(),
-                            order.getDeliveryStatus(),
-                            order.getUserEmail()
-                    );
-                })
-                .toList();
-
-    }
-
+    /**
+     * Processes payment for an order.
+     *
+     * @param id the ID of the order
+     * @return a success message if payment is successful
+     * @throws UserException if the order is not found or already paid
+     */
     public String doPayment(Long id) {
-        try {
-            // Fetch the order from the database
-            Order order = orderRepository.findById(id)
-                    .orElseThrow(() -> new UserException("Order not found"));
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new UserException("Order not found"));
 
-            // Check if the order is unpaid
-            if (order.getPaymentStatus().equals("UNPAID")) {
+        if ("UNPAID".equals(order.getPaymentStatus())) {
             order.setPaymentStatus("PAID");
             orderRepository.save(order);
-
-            log.info("Payment Done...{}",order.getOrderNumber());
-
             return "Payment successfully done";
-        }
-        else {
-            //Throw an exception if the order is already paid
+        } else {
             throw new UserException("Your already did payment");
         }
-    }catch (Exception ex) {
-            //Throw an exception if any error occurs
-        throw ex;
-    }
     }
 
-    public String cancelOrder(Long id){
-        try {
-            // Fetch the order from the database
-            Order order = orderRepository.findById(id)
-                    .orElseThrow(() -> new UserException("Order not found"));
+    /**
+     * Cancels an order.
+     *
+     * @param id the ID of the order
+     * @return a success message if cancellation is successful
+     * @throws UserException if the order cannot be canceled
+     */
+    public String cancelOrder(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new UserException("Order not found"));
 
-            if (order.getPaymentStatus().equals("PAID")) {
-                throw new UserException( "Can't cancel after payment");
-            }
-            List<OrderItem> orderItems = orderItemRepository.findAllByOrder(order);
-            List<InventoryRequest> inventoryItems = orderItems.stream()
-                    .map(item -> {
-                        return new InventoryRequest(item.getSkuCode(), item.getQuantity());
-                    }).toList();
-            log.info("Inventory Items : {}",inventoryItems);
-
-            //Increment Inventory
-            if(inventoryClient.incrementStock(inventoryItems).isInStock()) {
-
-                // Update the status
-                order.setPaymentStatus("CANCELED");
-                order.setDeliveryStatus("CANCELED");
-
-                // Save the updated order back to the database
-                orderRepository.save(order);
-
-                //Order Cancel Event
-                try {
-                    OrderCancelEvent orderCancelEvent = new OrderCancelEvent(order.getOrderNumber(), order.getUserEmail());
-                    log.info("Staring to send OrderPlacedEvent {}", orderCancelEvent);
-                    kafkaTemplateCancel.send("order-cancel", orderCancelEvent);
-                    log.info("Ending to send OrderPlacedEvent {}", orderCancelEvent);
-                }catch (Exception ex){
-
-                }
-
-                // Return a success message
-                return "Order canceled successfully ";
-            }else{
-             throw new UserException("Order cancel failed");
-            }
-        }catch (Exception ex){
-            //Throw an exception if any error occurs
-            throw ex;
+        if ("PAID".equals(order.getPaymentStatus())) {
+            throw new UserException("Can't cancel after payment");
         }
-    }
 
-    public String shipOrder(Long id){
-        try {
-            // Fetch the order from the database
-            Order order = orderRepository.findById(id)
-                    .orElseThrow(() -> new UserException("Order not found"));
+        List<OrderItem> orderItems = orderItemRepository.findAllByOrder(order);
+        List<InventoryRequest> inventoryItems = orderItems.stream()
+                .map(item -> new InventoryRequest(item.getSkuCode(), item.getQuantity()))
+                .toList();
 
-            // Check if the order is unpaid or canceled
-            if (!order.getPaymentStatus().equals("PAID")) {
-                throw new UserException( "Can't ship unpaid orders");
-            }
-
-            // Update the status
-            order.setDeliveryStatus("SHIPPED");
-
-            // Save the updated order back to the database
+        if (inventoryClient.incrementStock(inventoryItems).isInStock()) {
+            order.setPaymentStatus("CANCELED");
+            order.setDeliveryStatus("CANCELED");
             orderRepository.save(order);
 
-            // Return a success message
-            return "Order shipped successfully";
-        }
-        catch (Exception ex){
-            //Throw an exception if any error occurs
-            throw ex;
-        }
-    }
+            OrderCancelEvent orderCancelEvent = new OrderCancelEvent(order.getOrderNumber(), order.getUserEmail());
+            kafkaTemplateCancel.send("order-cancel", orderCancelEvent);
 
-    public String deliverOrder(Long id){
-        try {
-            // Fetch the order from the database
-            Order order = orderRepository.findById(id)
-                    .orElseThrow(() -> new UserException("Order not found"));
-
-            if (!order.getDeliveryStatus().equals("SHIPPED")) {
-                throw new UserException( "Can't deliver before shipping");
-            }
-            // Update the status
-            order.setDeliveryStatus("DELIVERED");
-
-            // Save the updated order back to the database
-            orderRepository.save(order);
-
-            // Return a success message
-            return "Order delivered successfully";
-        }
-        catch (Exception ex){
-            //Throw an exception if any error occurs
-            throw ex;
+            return "Order canceled successfully";
+        } else {
+            throw new UserException("Order cancel failed");
         }
     }
 
+    /**
+     * Marks an order as shipped.
+     *
+     * @param id the ID of the order
+     * @return a success message if the order is shipped
+     * @throws UserException if the order cannot be shipped
+     */
+    public String shipOrder(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new UserException("Order not found"));
 
+        if (!"PAID".equals(order.getPaymentStatus())) {
+            throw new UserException("Can't ship unpaid orders");
+        }
 
+        order.setDeliveryStatus("SHIPPED");
+        orderRepository.save(order);
+
+        return "Order shipped successfully";
+    }
+
+    /**
+     * Marks an order as delivered.
+     *
+     * @param id the ID of the order
+     * @return a success message if the order is delivered
+     * @throws UserException if the order cannot be delivered
+     */
+    public String deliverOrder(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new UserException("Order not found"));
+
+        if (!"SHIPPED".equals(order.getDeliveryStatus())) {
+            throw new UserException("Can't deliver before shipping");
+        }
+
+        order.setDeliveryStatus("DELIVERED");
+        orderRepository.save(order);
+
+        return "Order delivered successfully";
+    }
 }

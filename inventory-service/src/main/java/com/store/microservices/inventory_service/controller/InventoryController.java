@@ -2,7 +2,6 @@ package com.store.microservices.inventory_service.controller;
 
 import com.store.microservices.inventory_service.dto.InventoryResponse;
 import com.store.microservices.inventory_service.dto.OrderRequest;
-import com.store.microservices.inventory_service.dto.StockCheckResponse;
 import com.store.microservices.inventory_service.model.Inventory;
 import com.store.microservices.inventory_service.service.InventoryService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+/**
+ * REST controller for managing inventory operations.
+ * Provides endpoints for CRUD operations, stock checks, and inventory adjustments.
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/inventory")
@@ -21,7 +24,12 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
-
+    /**
+     * Adds a new product to the inventory.
+     *
+     * @param skuCode the SKU code of the product
+     * @return true if the product is successfully added
+     */
     @PostMapping("/products")
     @ResponseStatus(HttpStatus.OK)
     public Boolean addProduct(@RequestBody String skuCode) {
@@ -29,9 +37,14 @@ public class InventoryController {
         InventoryResponse response = inventoryService.addProduct(skuCode);
         log.info("Product with SKU code: {} added successfully, Response: {}", skuCode, response);
         return response != null;
-
     }
 
+    /**
+     * Deletes a product from the inventory.
+     *
+     * @param skuCode the SKU code of the product
+     * @return true if the product is successfully deleted
+     */
     @DeleteMapping("/products")
     @ResponseStatus(HttpStatus.OK)
     public Boolean deleteProduct(@RequestBody String skuCode) {
@@ -41,6 +54,11 @@ public class InventoryController {
         return response != null;
     }
 
+    /**
+     * Fetches all inventory items.
+     *
+     * @return list of all inventory items
+     */
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> fetchAllInventory() {
@@ -50,6 +68,13 @@ public class InventoryController {
         return inventoryList;
     }
 
+    /**
+     * Checks stock availability for a product.
+     *
+     * @param skuCode  the SKU code of the product
+     * @param quantity the required quantity
+     * @return stock availability response
+     */
     @GetMapping("/checkStock")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse isInStock(@RequestParam String skuCode, @RequestParam Integer quantity) {
@@ -59,6 +84,12 @@ public class InventoryController {
         return response;
     }
 
+    /**
+     * Fetches the quantity of a specific product.
+     *
+     * @param skuCode the SKU code of the product
+     * @return the quantity of the product
+     */
     @GetMapping("/getProductQuantity/{skuCode}")
     @ResponseStatus(HttpStatus.OK)
     public Integer getProductQuantity(@PathVariable String skuCode) {
@@ -68,16 +99,13 @@ public class InventoryController {
         return quantity;
     }
 
-
-    @GetMapping("/all")
-    @ResponseStatus(HttpStatus.OK)
-    public List<Inventory> getAllInventory() {
-        log.info("Fetching all inventory items");
-        List<Inventory> inventoryList = inventoryService.getAllInventory();
-        log.info("Fetched {} inventory items", inventoryList.size());
-        return inventoryList;
-    }
-
+    /**
+     * Deducts stock for a product.
+     *
+     * @param skuCode  the SKU code of the product
+     * @param quantity the quantity to deduct
+     * @return stock deduction response
+     */
     @PostMapping("/deduct")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse deductStock(
@@ -91,10 +119,16 @@ public class InventoryController {
             return response;
         } catch (Exception ex) {
             log.error("Error during stock deduction for SKU code: {}", skuCode, ex);
-            throw ex; // or handle as appropriate
+            throw ex;
         }
     }
 
+    /**
+     * Checks stock and processes an order if items are in stock.
+     *
+     * @param orderRequests list of order requests
+     * @return true if all items are in stock
+     */
     @PostMapping("/check-stock")
     @ResponseStatus(HttpStatus.OK)
     public Boolean checkAndProcessOrder(@RequestBody List<OrderRequest> orderRequests) {
@@ -107,6 +141,11 @@ public class InventoryController {
         }
     }
 
+    /**
+     * Fetches items with low stock levels.
+     *
+     * @return list of low-stock items
+     */
     @GetMapping("/low-stock")
     @ResponseStatus(HttpStatus.OK)
     public List<Inventory> getLowStockItems() {
@@ -116,6 +155,13 @@ public class InventoryController {
         return lowStockItems;
     }
 
+    /**
+     * Restocks inventory for a specific product.
+     *
+     * @param skuCode  the SKU code of the product
+     * @param quantity the quantity to restock
+     * @return restock response
+     */
     @PostMapping("/restock")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse restockInventory(@RequestParam String skuCode, @RequestParam Integer quantity) {
@@ -125,6 +171,12 @@ public class InventoryController {
         return response;
     }
 
+    /**
+     * Adjusts inventory based on processed orders.
+     *
+     * @param orderRequests list of processed order requests
+     * @return true if inventory is successfully adjusted
+     */
     @PostMapping("/increment-stock")
     public Boolean restockProcessedOrder(@RequestBody List<OrderRequest> orderRequests) {
         log.info("Received stock increment request for orders: {}", orderRequests);
@@ -136,6 +188,13 @@ public class InventoryController {
         }
     }
 
+    /**
+     * Changes the warehouse location for a product.
+     *
+     * @param skuCode  the SKU code of the product
+     * @param location the new warehouse location
+     * @return warehouse change response
+     */
     @PostMapping("/change-warehouse")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse changeWarehouse(@RequestParam String skuCode, @RequestParam String location) {

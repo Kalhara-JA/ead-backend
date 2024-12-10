@@ -8,8 +8,10 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.math.BigDecimal;
-
+/**
+ * Entity representing a product category in the Product Service.
+ * Stored in a MongoDB collection named "category".
+ */
 @Document(value = "category")
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,9 +20,8 @@ import java.math.BigDecimal;
 public class Category {
 
     @Id
-    private String id;
+    private String id;            // Unique identifier for the category
     @Indexed(unique = true)
-    private String skuCode;
-    private String name;
-
+    private String skuCode;       // Unique SKU code for the category
+    private String name;          // Name of the category
 }

@@ -1,7 +1,15 @@
 package com.store.microservices.order_service.dto;
 
-public class UserException extends RuntimeException{
-    public UserException(String message){
+/**
+ * Custom exception for user-related errors in the Order Service.
+ */
+public class UserException extends RuntimeException {
+    /**
+     * Constructs a new UserException with the specified detail message.
+     *
+     * @param message the detail message
+     */
+    public UserException(String message) {
         super(message);
     }
 }

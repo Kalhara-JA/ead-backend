@@ -9,6 +9,10 @@ import lombok.Setter;
 
 import java.util.List;
 
+/**
+ * Entity representing the Warehouse model.
+ * Maps warehouse data to the database and manages the relationship with Inventory entities.
+ */
 @Entity
 @Table(name = "t_warehouse")
 @Getter
@@ -16,6 +20,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Warehouse {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

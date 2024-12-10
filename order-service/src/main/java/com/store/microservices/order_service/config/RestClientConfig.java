@@ -13,22 +13,36 @@ import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 import java.time.Duration;
 
+/**
+ * Configuration for setting up the RestClient and InventoryClient.
+ * Handles communication with the Inventory Service.
+ */
 @Configuration
 public class RestClientConfig {
 
     @Value("${inventory.url}")
     private String inventoryServiceURL;
 
+    /**
+     * Creates an InventoryClient for interacting with the Inventory Service.
+     *
+     * @return an instance of InventoryClient
+     */
     @Bean
-    public InventoryClient InventoryClient(){
+    public InventoryClient InventoryClient() {
         RestClient restClient = RestClient.builder()
                 .baseUrl(inventoryServiceURL)
                 .build();
-        var restClientAdapter=RestClientAdapter.create(restClient);
-        var httpServiceProxyFactory= HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+        var restClientAdapter = RestClientAdapter.create(restClient);
+        var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
         return httpServiceProxyFactory.createClient(InventoryClient.class);
     }
 
+    /**
+     * Configures the HTTP request factory with timeout settings.
+     *
+     * @return a ClientHttpRequestFactory instance with custom settings
+     */
     private ClientHttpRequestFactory getClientHttpRequestFactory() {
         ClientHttpRequestFactorySettings clientHttpRequestFactorySettings = ClientHttpRequestFactorySettings.DEFAULTS
                 .withConnectTimeout(Duration.ofSeconds(3))
@@ -36,4 +50,3 @@ public class RestClientConfig {
         return ClientHttpRequestFactories.get(clientHttpRequestFactorySettings);
     }
 }
-
