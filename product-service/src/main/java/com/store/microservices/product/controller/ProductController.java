@@ -37,7 +37,7 @@ public class ProductController {
      * @param categoryRequest the category details
      * @return the created category details
      */
-    @PostMapping("/createCategory")
+    @PostMapping("/categories")
     @ResponseStatus(HttpStatus.CREATED)
     public CategoryResponse createCategory(@RequestBody CategoryRequest categoryRequest) {
         return productService.createCategory(categoryRequest);
@@ -71,7 +71,7 @@ public class ProductController {
      *
      * @return a list of all categories
      */
-    @GetMapping("/getAllCategories")
+    @GetMapping("/categories")
     @ResponseStatus(HttpStatus.OK)
     public List<CategoryResponse> getAllCategories() {
         return productService.getAllCategories();
@@ -97,7 +97,7 @@ public class ProductController {
      * @param image     the new image URL or details
      * @return the updated product details
      */
-    @PutMapping("/updateImage/{productId}")
+    @PutMapping("/images/{productId}")
     @ResponseStatus(HttpStatus.OK)
     public ProductResponse updateProductImage(@PathVariable String productId, @RequestBody String image) {
         return productService.updateProductImage(productId, image);

@@ -30,7 +30,7 @@ public interface InventoryClient {
      * @param skuCode the SKU code of the product
      * @return the quantity of the product in the inventory
      */
-    @GetExchange("/api/v1/inventory/getProductQuantity/{skuCode}")
+    @GetExchange("/api/v1/inventory/product-quantities/{skuCode}")
     Integer getProductQuantity(@PathVariable String skuCode);
 
     /**
@@ -38,7 +38,7 @@ public interface InventoryClient {
      *
      * @return a list of all inventory items as InventoryResponse
      */
-    @GetExchange("/api/v1/inventory/all")
+    @GetExchange("/api/v1/inventory")
     List<InventoryResponse> getAllInventory();
 
     /**

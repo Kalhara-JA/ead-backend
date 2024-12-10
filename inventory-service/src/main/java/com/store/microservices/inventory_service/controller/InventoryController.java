@@ -74,7 +74,7 @@ public class InventoryController {
      * @param quantity the required quantity
      * @return an InventoryResponse indicating stock availability and status
      */
-    @GetMapping("/checkStock")
+    @GetMapping("/stocks")
     @ResponseStatus(HttpStatus.OK)
     public InventoryResponse isInStock(@RequestParam String skuCode, @RequestParam Integer quantity) {
         log.info("Checking stock for SKU code: {}, Quantity: {}", skuCode, quantity);
@@ -89,27 +89,13 @@ public class InventoryController {
      * @param skuCode the SKU code of the product
      * @return the available quantity
      */
-    @GetMapping("/getProductQuantity/{skuCode}")
+    @GetMapping("/product-quantities/{skuCode}")
     @ResponseStatus(HttpStatus.OK)
     public Integer getProductQuantity(@PathVariable String skuCode) {
         log.info("Fetching quantity for SKU code: {}", skuCode);
         Integer quantity = inventoryService.getProductQuantity(skuCode);
         log.info("Fetched quantity: {} for SKU code: {}", quantity, skuCode);
         return quantity;
-    }
-
-    /**
-     * Retrieves the entire inventory list (duplicate endpoint for testing or compatibility).
-     *
-     * @return a list of all inventory items
-     */
-    @GetMapping("/all")
-    @ResponseStatus(HttpStatus.OK)
-    public List<Inventory> getAllInventory() {
-        log.info("Fetching all inventory items");
-        List<Inventory> inventoryList = inventoryService.getAllInventory();
-        log.info("Fetched {} inventory items", inventoryList.size());
-        return inventoryList;
     }
 
     /**
