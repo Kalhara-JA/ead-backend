@@ -1,0 +1,30 @@
+FROM eclipse-temurin:21-jdk-alpine as builder
+
+# Set the working directory
+WORKDIR /app
+
+# Copy Maven dependencies
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline -B
+
+# Copy the project files
+COPY src ./src
+
+# Package the application
+RUN ./mvnw package -DskipTests -B
+
+# Production image
+FROM eclipse-temurin:21-jre-alpine
+
+# Set the working directory
+WORKDIR /app
+
+# Copy jar from builder image
+COPY --from=builder /app/target/order-service-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the port
+EXPOSE 8081
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

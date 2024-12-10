@@ -1,0 +1,33 @@
+# Stage 1: Build the application
+FROM eclipse-temurin:21-jdk-alpine as builder
+
+# Set the working directory
+WORKDIR /app
+
+# Copy Maven wrapper and project files
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy the rest of the application source code
+COPY src ./src
+
+# Build the application
+RUN ./mvnw package -DskipTests -B
+
+# Stage 2: Create a minimal runtime image
+FROM eclipse-temurin:21-jre-alpine
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the built JAR file from the builder stage
+COPY --from=builder /app/target/inventory-service-0.0.1-SNAPSHOT.jar app.jar
+
+# Expose the application port
+EXPOSE 8082
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,20 +1,6 @@
-version: '3.8'
-services:
-  api-gateway:
-    build:
-      context: ./api-gateway
-    ports:
-      - "9000:9000"
-    depends_on:
-      - keycloak
-      - loki
-      - prometheus
-      - tempo
-      - grafana
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/store
+version: '4'
 
+services:
   mongodb:
     image: mongo:7.0.5
     container_name: mongodb_store
@@ -26,42 +12,223 @@ services:
       MONGO_INITDB_DATABASE: product-service
     volumes:
       - ./data:/data/db
+    networks:
+      - app_network
 
+  mysql:
+    image: mysql:8.3.0
+    container_name: mysql_store
+    ports:
+      - "3316:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - ./mysql:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app_network
+
+  keycloak-mysql:
+    container_name: keycloak-mysql
+    image: mysql:8
+    volumes:
+      - ./volume-data/mysql_keycloak_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    networks:
+      - app_network
+
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: keycloak-mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8181:8080"
+    volumes:
+      - ./docker/keycloak/realms/:/opt/keycloak/data/import/
+    depends_on:
+      - keycloak-mysql
+    networks:
+      - app_network
+
+  # Kafka and Related Services
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - app_network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - app_network
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8085:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+    networks:
+      - app_network
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8086:8080"
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      KAFKA_CLUSTERS_NAME: local
+      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8081
+    networks:
+      - app_network
+
+  # API Gateway
+  api-gateway:
+    container_name: api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile-api-gateway
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/store
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/store/protocol/openid-connect/certs
+      SPRINGDOC_SWAGGER_UI_ENABLED: "true"
+      SPRINGDOC_API_DOCS_ENABLED: "true"
+      PRODUCT_SERVICE_URL: http://product-service:8080
+      ORDER_SERVICE_URL: http://order-service:8081
+      INVENTORY_SERVICE_URL: http://inventory-service:8082
+    depends_on:
+      - keycloak
+      - product-service
+      - order-service
+      - inventory-service
+      - notification-service
+    networks:
+      - app_network
+
+  # Product Service
   product-service:
     build:
       context: ./product-service
+      dockerfile: Dockerfile-product-service
+    container_name: product-service
     ports:
-      - "8081:8080"
+      - "8080:8080"
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://root:rootpassword@mongodb_store:27017/product-service?authSource=admin
-      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATA_MONGODB_URI: mongodb://root:rootpassword@mongodb:27017/product-service?authSource=admin
+      INVENTORY_URL: http://inventory-service:8082
     depends_on:
       - mongodb
+    networks:
+      - app_network
 
+  # Order Service
   order-service:
     build:
       context: ./order-service
+      dockerfile: Dockerfile-order-service
+    container_name: order-service
     ports:
-      - "8082:8082"
-    depends_on:
-      - product-service
+      - "8081:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      SPRING_APPLICATION_NAME: order-service
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql_store:3306/order_service
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SERVER_PORT: 8081
+      INVENTORY_URL: http://inventory-service:8082
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_TEMPLATE_DEFAULT_TOPIC: order-placed
+      SPRING_KAFKA_PRODUCER_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on:
+      - mysql
+      - kafka
+      - schema-registry
+    networks:
+      - app_network
 
+  # Inventory Service
   inventory-service:
     build:
       context: ./inventory-service
+      dockerfile: Dockerfile-inventory-service
+    container_name: inventory-service
     ports:
-      - "8083:8083"
+      - "8082:8082"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql_store:3306/inventory_service
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_PROFILES_ACTIVE: prod
+    depends_on:
+      - mysql
+    networks:
+      - app_network
 
+  # Notification Service
   notification-service:
     build:
       context: ./notification-service
+      dockerfile: Dockerfile-notification-service
+    container_name: notification-service
     ports:
-      - "8084:8084"
-    depends_on:
-      - api-gateway
+      - "8083:8083"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      SPRING_APPLICATION_NAME: notification-service
+      SERVER_PORT: 8083
+      SPRING_MAIL_HOST: sandbox.smtp.mailtrap.io
+      SPRING_MAIL_PORT: 2525
+      SPRING_MAIL_USERNAME: 25d2ad28316bf8
+      SPRING_MAIL_PASSWORD: ed78b79e6e6276
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: notificationService
+      SPRING_KAFKA_CONSUMER_PROPERTIES_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    depends_on:
+      - kafka
+      - schema-registry
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
